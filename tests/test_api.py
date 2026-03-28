@@ -4,7 +4,6 @@ Tests all endpoints using FastAPI's TestClient.
 Written TDD-style before implementation.
 """
 
-import pytest
 
 
 class TestHealthEndpoint:
@@ -146,7 +145,6 @@ class TestFullEpisodeViaAPI:
     It may need to be adjusted once the actual task configs are created.
     """
 
-    @pytest.mark.skipif(True, reason="Enable after Phase 4 implementation")
     def test_complete_episode(self) -> None:
         from starlette.testclient import TestClient
 
