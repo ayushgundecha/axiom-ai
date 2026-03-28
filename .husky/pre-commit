@@ -1,0 +1,29 @@
+#!/bin/sh
+
+echo "Running pre-commit checks..."
+
+# Run linting
+echo "  Linting..."
+make lint 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "  Lint failed. Fix errors before committing."
+    exit 1
+fi
+
+# Run type checking
+echo "  Type checking..."
+make typecheck 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "  Type check failed. Fix type errors before committing."
+    exit 1
+fi
+
+# Run unit tests (not integration tests)
+echo "  Running unit tests..."
+make test 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "  Tests failed. Fix failing tests before committing."
+    exit 1
+fi
+
+echo "All pre-commit checks passed."

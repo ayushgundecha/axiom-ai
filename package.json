@@ -1,0 +1,11 @@
+{
+  "name": "axiom-ai",
+  "private": true,
+  "description": "Development tooling for axiom-ai (Husky pre-commit hooks)",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.0"
+  }
+}
