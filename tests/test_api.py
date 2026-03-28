@@ -4,18 +4,18 @@ Tests all endpoints using FastAPI's TestClient.
 Written TDD-style before implementation.
 """
 
+
 import pytest
-from unittest.mock import AsyncMock, patch
 
 
 class TestHealthEndpoint:
     """Health check must return status and metadata."""
 
     def test_health_returns_200(self) -> None:
-        from axiom.api.app import create_app
-
         # Use TestClient for sync testing of async app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -33,8 +33,9 @@ class TestEnvironmentsEndpoint:
     """List registered environments."""
 
     def test_list_envs(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -52,8 +53,9 @@ class TestTasksEndpoint:
     """List available tasks."""
 
     def test_list_tasks(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -69,8 +71,9 @@ class TestSessionEndpoints:
     """Session CRUD and step/observe/evaluate."""
 
     def test_create_session(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -83,8 +86,9 @@ class TestSessionEndpoints:
         assert resp.status_code in (200, 201, 404, 422)
 
     def test_step_nonexistent_session_returns_404(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -97,8 +101,9 @@ class TestSessionEndpoints:
         assert resp.status_code == 404
 
     def test_observe_nonexistent_session_returns_404(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -107,8 +112,9 @@ class TestSessionEndpoints:
         assert resp.status_code == 404
 
     def test_evaluate_nonexistent_session_returns_404(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -117,8 +123,9 @@ class TestSessionEndpoints:
         assert resp.status_code == 404
 
     def test_delete_nonexistent_session_returns_404(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)
@@ -136,8 +143,9 @@ class TestFullEpisodeViaAPI:
 
     @pytest.mark.skipif(True, reason="Enable after Phase 4 implementation")
     def test_complete_episode(self) -> None:
-        from axiom.api.app import create_app
         from starlette.testclient import TestClient
+
+        from axiom.api.app import create_app
 
         app = create_app()
         client = TestClient(app)

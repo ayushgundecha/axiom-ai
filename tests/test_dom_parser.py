@@ -4,7 +4,6 @@ Tests that raw HTML is correctly transformed into token-efficient DOM trees.
 Written TDD-style before implementation.
 """
 
-import pytest
 
 
 class TestSimplifiedDOMParser:

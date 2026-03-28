@@ -4,14 +4,11 @@ Tests the registry, session manager, task loader, and trajectory recorder.
 Written TDD-style before implementation.
 """
 
-import asyncio
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
-
 
 # ---------------------------------------------------------------------------
 # Registry tests
@@ -127,7 +124,9 @@ class TestSessionManager:
             manager.get_session("nonexistent_id")
 
     @pytest.mark.asyncio
-    async def test_close_session_calls_cleanup(self, sample_json_task_config: dict[str, Any]) -> None:
+    async def test_close_session_calls_cleanup(
+        self, sample_json_task_config: dict[str, Any]
+    ) -> None:
         from axiom.core.session import SessionManager
 
         mock_registry = MagicMock()

@@ -5,13 +5,14 @@ Marked with @pytest.mark.integration for selective execution.
 Written TDD-style before implementation.
 """
 
-import os
 from typing import Any
 
 import pytest
-import pytest_asyncio
 
 from tests.conftest import requires_todo_app
+
+TODO_INPUT = "[data-testid='todo-input']"
+ADD_BUTTON = "[data-testid='add-button']"
 
 
 @pytest.mark.integration
@@ -20,7 +21,9 @@ class TestWebAppEnvironment:
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_reset_returns_observation(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_reset_returns_observation(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Observation, TaskConfig
 
@@ -52,7 +55,9 @@ class TestWebAppEnvironment:
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_type_and_click_adds_todo(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_type_and_click_adds_todo(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
 
@@ -60,26 +65,26 @@ class TestWebAppEnvironment:
         async with WebAppEnvironment(config) as env:
             await env.reset()
 
-            # Type into input
             type_action = Action(
                 type=ActionType.TYPE,
-                selector="[data-testid='todo-input']",
+                selector=TODO_INPUT,
                 value="Review PR #42",
             )
             r1 = await env.step(type_action)
             assert r1.info["valid"] is True
 
-            # Click add button
             click_action = Action(
                 type=ActionType.CLICK,
-                selector="[data-testid='add-button']",
+                selector=ADD_BUTTON,
             )
             r2 = await env.step(click_action)
             assert r2.info["valid"] is True
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_goal_element_count(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_goal_element_count(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         """Add 3 todos and verify the element_count goal is met."""
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
@@ -88,23 +93,25 @@ class TestWebAppEnvironment:
         async with WebAppEnvironment(config) as env:
             await env.reset()
 
-            todos = ["Review PR #42", "Deploy to staging", "Write unit tests"]
+            todos = ["Review PR #42", "Deploy to staging", "Write tests"]
             for title in todos:
                 await env.step(Action(
                     type=ActionType.TYPE,
-                    selector="[data-testid='todo-input']",
+                    selector=TODO_INPUT,
                     value=title,
                 ))
                 result = await env.step(Action(
                     type=ActionType.CLICK,
-                    selector="[data-testid='add-button']",
+                    selector=ADD_BUTTON,
                 ))
 
             assert result.terminated  # Goal: 3 todo items
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_evaluate_completed_task(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_evaluate_completed_task(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
 
@@ -112,10 +119,16 @@ class TestWebAppEnvironment:
         async with WebAppEnvironment(config) as env:
             await env.reset()
 
-            todos = ["T1", "T2", "T3"]
-            for title in todos:
-                await env.step(Action(type=ActionType.TYPE, selector="[data-testid='todo-input']", value=title))
-                await env.step(Action(type=ActionType.CLICK, selector="[data-testid='add-button']"))
+            for title in ["T1", "T2", "T3"]:
+                await env.step(Action(
+                    type=ActionType.TYPE,
+                    selector=TODO_INPUT,
+                    value=title,
+                ))
+                await env.step(Action(
+                    type=ActionType.CLICK,
+                    selector=ADD_BUTTON,
+                ))
 
             scores = await env.evaluate()
             assert scores["completion"] == 1.0
@@ -125,7 +138,9 @@ class TestWebAppEnvironment:
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_reset_clears_server_state(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_reset_clears_server_state(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         """Reset must clear BOTH browser and server state."""
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
@@ -134,18 +149,25 @@ class TestWebAppEnvironment:
         async with WebAppEnvironment(config) as env:
             # First episode: add todos
             await env.reset()
-            await env.step(Action(type=ActionType.TYPE, selector="[data-testid='todo-input']", value="T1"))
-            await env.step(Action(type=ActionType.CLICK, selector="[data-testid='add-button']"))
+            await env.step(Action(
+                type=ActionType.TYPE,
+                selector=TODO_INPUT,
+                value="T1",
+            ))
+            await env.step(Action(
+                type=ActionType.CLICK,
+                selector=ADD_BUTTON,
+            ))
 
             # Second episode: reset should clear everything
             obs = await env.reset()
-            # After reset, there should be no todos
             assert obs.dom_tree is not None
-            # The DOM should not contain any todo items after reset
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_invalid_selector_gives_error(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_invalid_selector_gives_error(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
 
@@ -163,7 +185,9 @@ class TestWebAppEnvironment:
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_env_id_is_webapp(self, sample_webapp_task_config: dict[str, Any]) -> None:
+    async def test_env_id_is_webapp(
+        self, sample_webapp_task_config: dict[str, Any]
+    ) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import TaskConfig
 

@@ -4,10 +4,10 @@ Tests sandboxing, safety, command execution, and goal checking.
 Written TDD-style before implementation.
 """
 
+from pathlib import Path
 from typing import Any
 
 import pytest
-import pytest_asyncio
 
 
 class TestCLIEnvironment:
@@ -161,19 +161,17 @@ class TestCLIEnvironment:
 
     @pytest.mark.asyncio
     async def test_cleanup_removes_temp_dir(self, sample_cli_task_config: dict[str, Any]) -> None:
-        import os
-
         from axiom.envs.cli_env import CLIEnvironment
         from axiom.models import TaskConfig
 
         config = TaskConfig(**sample_cli_task_config)
         env = CLIEnvironment(config)
         await env.reset()
-        workdir = env._workdir
-        assert os.path.exists(workdir)
+        workdir = Path(env._workdir)
+        assert workdir.exists()  # noqa: ASYNC240
 
         await env.cleanup()
-        assert not os.path.exists(workdir)
+        assert not workdir.exists()  # noqa: ASYNC240
 
     @pytest.mark.asyncio
     async def test_step_without_reset_raises(self, sample_cli_task_config: dict[str, Any]) -> None:
