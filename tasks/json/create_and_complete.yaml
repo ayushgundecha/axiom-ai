@@ -1,0 +1,18 @@
+name: "create_and_complete"
+env: "json"
+description: |
+  You are interacting with a todo list via API calls.
+  Your task is to add two todos:
+  1. "Review PR #42"
+  2. "Deploy to staging"
+  Then mark both as completed.
+
+observation_mode: "json"
+
+goal:
+  type: "element_count"
+  field: "todos"
+  count: 2
+
+max_steps: 10
+optimal_steps: 2
