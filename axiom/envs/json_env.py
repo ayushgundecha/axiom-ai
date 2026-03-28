@@ -69,12 +69,14 @@ class JSONEnvironment(BaseEnvironment):
                 info["error"] = result["error"]
                 reward = -0.1
 
-        self._action_history.append({
-            "step": self.step_count,
-            "action": action.model_dump(),
-            "reward": reward,
-            "valid": info["valid"],
-        })
+        self._action_history.append(
+            {
+                "step": self.step_count,
+                "action": action.model_dump(),
+                "reward": reward,
+                "valid": info["valid"],
+            }
+        )
 
         # Check goal
         goal_met = self._check_goal()
@@ -96,9 +98,7 @@ class JSONEnvironment(BaseEnvironment):
         goal_met = self._check_goal()
         optimal = self.task_config.optimal_steps or self.max_steps
         efficiency = (
-            max(0.0, 1.0 - (self.step_count - optimal) / self.max_steps)
-            if goal_met
-            else 0.0
+            max(0.0, 1.0 - (self.step_count - optimal) / self.max_steps) if goal_met else 0.0
         )
         invalid = sum(1 for a in self._action_history if not a.get("valid", True))
 

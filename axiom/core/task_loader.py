@@ -43,10 +43,7 @@ class TaskLoader:
         task_file = self._tasks_dir / env_type / f"{task_id}.yaml"
 
         if not task_file.exists():
-            msg = (
-                f"Task file not found: {task_file}. "
-                f"Expected at tasks/{env_type}/{task_id}.yaml"
-            )
+            msg = f"Task file not found: {task_file}. Expected at tasks/{env_type}/{task_id}.yaml"
             raise TaskConfigError(msg)
 
         try:
