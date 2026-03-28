@@ -2,13 +2,11 @@
 
 import asyncio
 import os
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
 import pytest
-import pytest_asyncio
-
 
 # ---------------------------------------------------------------------------
 # Async event loop

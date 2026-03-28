@@ -7,7 +7,6 @@ Written TDD-style before implementation.
 from typing import Any
 
 import pytest
-import pytest_asyncio
 
 
 class TestJSONEnvironment:
@@ -151,7 +150,9 @@ class TestJSONEnvironment:
         await env.cleanup()
 
     @pytest.mark.asyncio
-    async def test_invalid_action_gives_negative_reward(self, sample_json_task_config: dict[str, Any]) -> None:
+    async def test_invalid_action_gives_negative_reward(
+        self, sample_json_task_config: dict[str, Any]
+    ) -> None:
         from axiom.envs.json_env import JSONEnvironment
         from axiom.models import Action, ActionType, TaskConfig
 
