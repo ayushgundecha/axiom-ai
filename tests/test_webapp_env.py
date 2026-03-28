@@ -82,9 +82,7 @@ class TestWebAppEnvironment:
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_goal_element_count(
-        self, sample_webapp_task_config: dict[str, Any]
-    ) -> None:
+    async def test_goal_element_count(self, sample_webapp_task_config: dict[str, Any]) -> None:
         """Add 3 todos and verify the element_count goal is met."""
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
@@ -95,23 +93,25 @@ class TestWebAppEnvironment:
 
             todos = ["Review PR #42", "Deploy to staging", "Write tests"]
             for title in todos:
-                await env.step(Action(
-                    type=ActionType.TYPE,
-                    selector=TODO_INPUT,
-                    value=title,
-                ))
-                result = await env.step(Action(
-                    type=ActionType.CLICK,
-                    selector=ADD_BUTTON,
-                ))
+                await env.step(
+                    Action(
+                        type=ActionType.TYPE,
+                        selector=TODO_INPUT,
+                        value=title,
+                    )
+                )
+                result = await env.step(
+                    Action(
+                        type=ActionType.CLICK,
+                        selector=ADD_BUTTON,
+                    )
+                )
 
             assert result.terminated  # Goal: 3 todo items
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_evaluate_completed_task(
-        self, sample_webapp_task_config: dict[str, Any]
-    ) -> None:
+    async def test_evaluate_completed_task(self, sample_webapp_task_config: dict[str, Any]) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import Action, ActionType, TaskConfig
 
@@ -120,15 +120,19 @@ class TestWebAppEnvironment:
             await env.reset()
 
             for title in ["T1", "T2", "T3"]:
-                await env.step(Action(
-                    type=ActionType.TYPE,
-                    selector=TODO_INPUT,
-                    value=title,
-                ))
-                await env.step(Action(
-                    type=ActionType.CLICK,
-                    selector=ADD_BUTTON,
-                ))
+                await env.step(
+                    Action(
+                        type=ActionType.TYPE,
+                        selector=TODO_INPUT,
+                        value=title,
+                    )
+                )
+                await env.step(
+                    Action(
+                        type=ActionType.CLICK,
+                        selector=ADD_BUTTON,
+                    )
+                )
 
             scores = await env.evaluate()
             assert scores["completion"] == 1.0
@@ -149,15 +153,19 @@ class TestWebAppEnvironment:
         async with WebAppEnvironment(config) as env:
             # First episode: add todos
             await env.reset()
-            await env.step(Action(
-                type=ActionType.TYPE,
-                selector=TODO_INPUT,
-                value="T1",
-            ))
-            await env.step(Action(
-                type=ActionType.CLICK,
-                selector=ADD_BUTTON,
-            ))
+            await env.step(
+                Action(
+                    type=ActionType.TYPE,
+                    selector=TODO_INPUT,
+                    value="T1",
+                )
+            )
+            await env.step(
+                Action(
+                    type=ActionType.CLICK,
+                    selector=ADD_BUTTON,
+                )
+            )
 
             # Second episode: reset should clear everything
             obs = await env.reset()
@@ -185,9 +193,7 @@ class TestWebAppEnvironment:
 
     @requires_todo_app
     @pytest.mark.asyncio
-    async def test_env_id_is_webapp(
-        self, sample_webapp_task_config: dict[str, Any]
-    ) -> None:
+    async def test_env_id_is_webapp(self, sample_webapp_task_config: dict[str, Any]) -> None:
         from axiom.envs.webapp_env import WebAppEnvironment
         from axiom.models import TaskConfig
 

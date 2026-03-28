@@ -1,6 +1,5 @@
 .PHONY: install dev lint format typecheck test test-integration check docker-up docker-down clean
 
-# Directories to lint/check — only include those that exist
 PYTHON_DIRS := $(strip $(wildcard axiom/) $(wildcard tests/) $(wildcard agents/))
 
 install:
@@ -11,47 +10,19 @@ dev:
 	playwright install chromium
 
 lint:
-	@if command -v ruff >/dev/null 2>&1; then \
-		if [ -n "$(PYTHON_DIRS)" ]; then \
-			ruff check $(PYTHON_DIRS); \
-		else \
-			echo "  No Python source directories found, skipping lint"; \
-		fi; \
-	else \
-		echo "  ruff not installed, skipping lint (run: make install)"; \
-	fi
+	ruff check $(PYTHON_DIRS)
 
 format:
-	@if command -v ruff >/dev/null 2>&1; then \
-		if [ -n "$(PYTHON_DIRS)" ]; then ruff format $(PYTHON_DIRS); fi; \
-	else \
-		echo "  ruff not installed (run: make install)"; \
-	fi
+	ruff format $(PYTHON_DIRS)
 
 typecheck:
-	@if command -v mypy >/dev/null 2>&1; then \
-		if [ -f "axiom/models.py" ] && [ -f "axiom/config.py" ]; then \
-			mypy --strict axiom/; \
-		else \
-			echo "  axiom not yet implemented, skipping typecheck (models.py or config.py missing)"; \
-		fi; \
-	else \
-		echo "  mypy not installed, skipping typecheck (run: make install)"; \
-	fi
+	mypy --strict axiom/
 
 test:
-	@if command -v pytest >/dev/null 2>&1; then \
-		if [ -f "axiom/models.py" ] && [ -f "axiom/config.py" ]; then \
-			python -m pytest tests/ -v -m "not integration"; \
-		else \
-			echo "  axiom not yet implemented, skipping tests (models.py or config.py missing)"; \
-		fi; \
-	else \
-		echo "  pytest not installed, skipping tests (run: make install)"; \
-	fi
+	pytest tests/ -v -m "not integration"
 
 test-integration:
-	python -m pytest tests/ -v -m integration
+	pytest tests/ -v -m integration
 
 check: lint typecheck test
 

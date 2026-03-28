@@ -12,6 +12,7 @@ import pytest
 # Async event loop
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     """Create a single event loop for the entire test session."""
@@ -23,6 +24,7 @@ def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
 # ---------------------------------------------------------------------------
 # Sample task configs (used across multiple test modules)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def sample_json_task_config() -> dict[str, Any]:
@@ -109,6 +111,7 @@ def tasks_dir(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 # Integration test helpers
 # ---------------------------------------------------------------------------
+
 
 def is_todo_app_running() -> bool:
     """Check if the todo web app is accessible."""

@@ -5,7 +5,6 @@ Written TDD-style before implementation.
 """
 
 
-
 class TestSimplifiedDOMParser:
     """DOM parser must extract only interactive and semantic elements."""
 
