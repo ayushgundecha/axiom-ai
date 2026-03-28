@@ -30,10 +30,10 @@ format:
 
 typecheck:
 	@if command -v mypy >/dev/null 2>&1; then \
-		if [ -f "axiom/models.py" ]; then \
+		if [ -f "axiom/models.py" ] && [ -f "axiom/config.py" ]; then \
 			mypy --strict axiom/; \
 		else \
-			echo "  axiom not yet implemented, skipping typecheck (models.py missing)"; \
+			echo "  axiom not yet implemented, skipping typecheck (models.py or config.py missing)"; \
 		fi; \
 	else \
 		echo "  mypy not installed, skipping typecheck (run: make install)"; \
@@ -41,10 +41,10 @@ typecheck:
 
 test:
 	@if command -v pytest >/dev/null 2>&1; then \
-		if [ -f "axiom/models.py" ]; then \
+		if [ -f "axiom/models.py" ] && [ -f "axiom/config.py" ]; then \
 			python -m pytest tests/ -v -m "not integration"; \
 		else \
-			echo "  axiom not yet implemented, skipping tests (models.py missing)"; \
+			echo "  axiom not yet implemented, skipping tests (models.py or config.py missing)"; \
 		fi; \
 	else \
 		echo "  pytest not installed, skipping tests (run: make install)"; \
