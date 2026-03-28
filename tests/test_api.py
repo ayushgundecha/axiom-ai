@@ -4,7 +4,6 @@ Tests all endpoints using FastAPI's TestClient.
 Written TDD-style before implementation.
 """
 
-
 import pytest
 
 
@@ -78,10 +77,13 @@ class TestSessionEndpoints:
         app = create_app()
         client = TestClient(app)
 
-        resp = client.post("/sessions", json={
-            "env_name": "json",
-            "task_id": "create_and_complete",
-        })
+        resp = client.post(
+            "/sessions",
+            json={
+                "env_name": "json",
+                "task_id": "create_and_complete",
+            },
+        )
         # May fail if task doesn't exist yet, but endpoint should exist
         assert resp.status_code in (200, 201, 404, 422)
 
@@ -93,11 +95,14 @@ class TestSessionEndpoints:
         app = create_app()
         client = TestClient(app)
 
-        resp = client.post("/sessions/nonexistent/step", json={
-            "type": "api_call",
-            "value": "add_todo",
-            "params": {"title": "Test"},
-        })
+        resp = client.post(
+            "/sessions/nonexistent/step",
+            json={
+                "type": "api_call",
+                "value": "add_todo",
+                "params": {"title": "Test"},
+            },
+        )
         assert resp.status_code == 404
 
     def test_observe_nonexistent_session_returns_404(self) -> None:
@@ -151,19 +156,25 @@ class TestFullEpisodeViaAPI:
         client = TestClient(app)
 
         # Create session
-        resp = client.post("/sessions", json={
-            "env_name": "json",
-            "task_id": "create_and_complete",
-        })
+        resp = client.post(
+            "/sessions",
+            json={
+                "env_name": "json",
+                "task_id": "create_and_complete",
+            },
+        )
         assert resp.status_code in (200, 201)
         session_id = resp.json()["session_id"]
 
         # Step: add a todo
-        resp = client.post(f"/sessions/{session_id}/step", json={
-            "type": "api_call",
-            "value": "add_todo",
-            "params": {"title": "Test todo"},
-        })
+        resp = client.post(
+            f"/sessions/{session_id}/step",
+            json={
+                "type": "api_call",
+                "value": "add_todo",
+                "params": {"title": "Test todo"},
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert "observation" in data

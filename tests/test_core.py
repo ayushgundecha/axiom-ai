@@ -39,7 +39,10 @@ class TestEnvironmentRegistry:
         registry.register("test_env", mock_cls)
 
         config = TaskConfig(
-            name="t", env="test_env", description="d", max_steps=5,
+            name="t",
+            env="test_env",
+            description="d",
+            max_steps=5,
             goal={"type": "element_count", "field": "x", "count": 1},
         )
         env = registry.create("test_env", config)
@@ -52,7 +55,10 @@ class TestEnvironmentRegistry:
 
         registry = EnvironmentRegistry()
         config = TaskConfig(
-            name="t", env="nonexistent", description="d", max_steps=5,
+            name="t",
+            env="nonexistent",
+            description="d",
+            max_steps=5,
             goal={"type": "element_count", "field": "x", "count": 1},
         )
         with pytest.raises(TaskConfigError):
@@ -143,6 +149,7 @@ class TestSessionManager:
         mock_env.cleanup.assert_awaited_once()
 
         from axiom.exceptions import SessionError
+
         with pytest.raises(SessionError):
             manager.get_session(session.session_id)
 
