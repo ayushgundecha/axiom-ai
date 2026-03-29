@@ -1,0 +1,20 @@
+name: "add_three_todos"
+env: "webapp"
+description: |
+  You are interacting with a todo application in a web browser.
+  Your task is to add three new todos:
+  1. "Review PR #42"
+  2. "Deploy to staging"
+  3. "Write unit tests"
+  Use the input field and add button to create each todo.
+
+app_url: "http://localhost:3000"
+observation_mode: "hybrid"
+
+goal:
+  type: "element_count"
+  selector: "[data-testid^='todo-item-']"
+  count: 3
+
+max_steps: 12
+optimal_steps: 6
