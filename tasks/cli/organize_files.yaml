@@ -1,0 +1,38 @@
+name: "organize_files_by_extension"
+env: "cli"
+description: |
+  You have a flat directory with mixed files. Your task is to:
+  1. Create directories: images/, docs/, code/
+  2. Move all .png and .jpg files into images/
+  3. Move all .txt and .md files into docs/
+  4. Move all .py and .js files into code/
+
+observation_mode: "text"
+
+initial_state:
+  files:
+    - path: "photo1.png"
+      content: ""
+    - path: "photo2.jpg"
+      content: ""
+    - path: "readme.md"
+      content: "# Project"
+    - path: "notes.txt"
+      content: "Some notes"
+    - path: "main.py"
+      content: "print('hello')"
+    - path: "utils.js"
+      content: "module.exports = {}"
+
+goal:
+  type: "directory_structure"
+  expected_structure:
+    - "images/photo1.png"
+    - "images/photo2.jpg"
+    - "docs/readme.md"
+    - "docs/notes.txt"
+    - "code/main.py"
+    - "code/utils.js"
+
+max_steps: 10
+optimal_steps: 4
