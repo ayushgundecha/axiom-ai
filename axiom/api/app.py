@@ -30,9 +30,11 @@ from axiom.logging import configure_logging, get_logger
 def _create_registry() -> EnvironmentRegistry:
     """Create and populate the environment registry."""
     from axiom.envs.json_env import JSONEnvironment
+    from axiom.envs.webapp_env import WebAppEnvironment
 
     registry = EnvironmentRegistry()
     registry.register("json", JSONEnvironment)
+    registry.register("webapp", WebAppEnvironment)
     return registry
 
 

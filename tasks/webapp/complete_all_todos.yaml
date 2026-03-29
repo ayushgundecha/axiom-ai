@@ -1,0 +1,36 @@
+name: "complete_all_todos"
+env: "webapp"
+description: |
+  The todo app has 3 existing todos. Your task is to
+  mark ALL of them as completed by clicking their checkboxes.
+  The stats should show "3/3 completed" when done.
+
+app_url: "http://localhost:3000"
+observation_mode: "hybrid"
+
+setup_actions:
+  - type: "type"
+    selector: "[data-testid='todo-input']"
+    value: "Task Alpha"
+  - type: "click"
+    selector: "[data-testid='add-button']"
+  - type: "type"
+    selector: "[data-testid='todo-input']"
+    value: "Task Beta"
+  - type: "click"
+    selector: "[data-testid='add-button']"
+  - type: "type"
+    selector: "[data-testid='todo-input']"
+    value: "Task Gamma"
+  - type: "click"
+    selector: "[data-testid='add-button']"
+
+goal:
+  type: "custom_js"
+  script: |
+    const items = document.querySelectorAll('[data-testid^="todo-item-"]');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    return items.length === 3 && [...checkboxes].every(c => c.checked);
+
+max_steps: 10
+optimal_steps: 3
