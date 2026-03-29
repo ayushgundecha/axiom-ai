@@ -1,0 +1,26 @@
+name: "find_and_extract"
+env: "cli"
+description: |
+  You have a directory with several text files. Your task is to:
+  1. Find all files containing the word "important"
+  2. Create a file called summary.txt containing just those lines
+
+observation_mode: "text"
+
+initial_state:
+  files:
+    - path: "notes1.txt"
+      content: "This is a regular note\nThis line is important data\nAnother line"
+    - path: "notes2.txt"
+      content: "Nothing special here\nJust some text"
+    - path: "notes3.txt"
+      content: "More important information here\nEnd of file"
+
+goal:
+  type: "file_content_matches"
+  checks:
+    - path: "summary.txt"
+      contains: "important"
+
+max_steps: 8
+optimal_steps: 2
