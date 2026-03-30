@@ -1,0 +1,27 @@
+services:
+  # Real todo web app (target application for WebApp environment)
+  todo-app:
+    build: ./apps/todo-app
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 5s
+      retries: 3
+      start_period: 5s
+
+  # axiom-ai server (orchestrator + Playwright)
+  axiom:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      todo-app:
+        condition: service_healthy
+    environment:
+      - AXIOM_TODO_APP_URL=http://todo-app:3000
+      - AXIOM_LOG_LEVEL=info
+      - AXIOM_LOG_FORMAT=console
+    volumes:
+      - ./tasks:/app/tasks:ro
+      - ./trajectories:/app/trajectories
