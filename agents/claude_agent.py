@@ -10,7 +10,7 @@ Key design decisions:
     so Claude can avoid repeating failed actions
   - Retry on invalid JSON: one retry with a correction prompt
   - Cost tracking: logs input/output tokens per call
-  - Configurable model (defaults to claude-sonnet-4-20250514)
+  - Configurable model (defaults to claude-haiku-4-5-20251001)
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ class ClaudeAgent:
 
     def __init__(
         self,
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "claude-haiku-4-5-20251001",
     ) -> None:
         self.client = anthropic.Anthropic()
         self.model = model
