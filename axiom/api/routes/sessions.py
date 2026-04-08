@@ -107,11 +107,31 @@ async def evaluate_session(
 ) -> EvaluateResponse:
     """Run multi-signal evaluation on the current environment state."""
     state = request.app.state
+    settings = get_settings()
     session = state.session_manager.get_session(session_id)
-    scores = await session.env.evaluate()
+
+    # Check if task has LLM evaluation rubric and judge is enabled
+    task_config = session.env.task_config
+    if task_config.llm_evaluation and settings.llm_judge_enabled:
+        from axiom.core.evaluator import CompositeEvaluator, DefaultEvaluator
+        from axiom.core.llm_judge import LLMJudgeEvaluator
+
+        trajectory = state.trajectory_recorder.get_trajectory(session_id)
+        judge = LLMJudgeEvaluator(
+            model=settings.llm_judge_model,
+            rubric=task_config.llm_evaluation.get("rubric", {}),
+        )
+        judge.set_trajectory(trajectory)
+        composite = CompositeEvaluator([
+            (0.6, DefaultEvaluator()),
+            (0.4, judge),
+        ])
+        result = await composite.evaluate(session.env)
+        scores: dict[str, Any] = result.model_dump()
+    else:
+        scores = await session.env.evaluate()
 
     # Persist trajectory with evaluation scores
-    settings = get_settings()
     with contextlib.suppress(ValueError):
         state.trajectory_recorder.set_evaluation(session_id, scores)
         state.trajectory_recorder.save(session_id, settings.trajectory_dir)

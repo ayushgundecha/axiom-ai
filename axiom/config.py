@@ -48,6 +48,10 @@ class AxiomSettings(BaseSettings):
     # Sessions
     max_session_age_seconds: int = 3600
 
+    # LLM Judge
+    llm_judge_model: str = "claude-haiku-4-5-20251001"
+    llm_judge_enabled: bool = False
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> AxiomSettings:
