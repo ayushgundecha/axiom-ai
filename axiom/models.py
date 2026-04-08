@@ -193,6 +193,7 @@ class TaskConfig(BaseModel):
     goal: dict[str, Any]
     setup_actions: list[dict[str, Any]] = Field(default_factory=list)
     initial_state: dict[str, Any] = Field(default_factory=dict)
+    llm_evaluation: dict[str, Any] | None = None
 
 
 # ---------------------------------------------------------------------------
