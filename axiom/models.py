@@ -218,3 +218,4 @@ class Trajectory(BaseModel):
     task_name: str
     env_type: str
     steps: list[TrajectoryStep] = Field(default_factory=list)
+    evaluation: dict[str, Any] = Field(default_factory=dict)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -13,6 +14,7 @@ from axiom.api.schemas import (
     StepRequest,
     StepResponse,
 )
+from axiom.config import get_settings
 from axiom.models import Action, ActionType
 
 router = APIRouter(prefix="/sessions")
@@ -104,8 +106,16 @@ async def evaluate_session(
     request: Request,
 ) -> EvaluateResponse:
     """Run multi-signal evaluation on the current environment state."""
-    session = request.app.state.session_manager.get_session(session_id)
+    state = request.app.state
+    session = state.session_manager.get_session(session_id)
     scores = await session.env.evaluate()
+
+    # Persist trajectory with evaluation scores
+    settings = get_settings()
+    with contextlib.suppress(ValueError):
+        state.trajectory_recorder.set_evaluation(session_id, scores)
+        state.trajectory_recorder.save(session_id, settings.trajectory_dir)
+
     return EvaluateResponse(scores=scores)
 
 
@@ -128,4 +138,11 @@ async def delete_session(
     request: Request,
 ) -> None:
     """Close and cleanup a session."""
-    await request.app.state.session_manager.close_session(session_id)
+    state = request.app.state
+    settings = get_settings()
+
+    # Defensive save — trajectory may already be saved during evaluate
+    with contextlib.suppress(ValueError):
+        state.trajectory_recorder.save(session_id, settings.trajectory_dir)
+
+    await state.session_manager.close_session(session_id)

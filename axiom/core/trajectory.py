@@ -70,6 +70,15 @@ class TrajectoryRecorder:
         )
         trajectory.steps.append(step)
 
+    def set_evaluation(
+        self,
+        session_id: str,
+        evaluation: dict[str, Any],
+    ) -> None:
+        """Attach evaluation scores to a trajectory."""
+        trajectory = self.get_trajectory(session_id)
+        trajectory.evaluation = evaluation
+
     def get_trajectory(self, session_id: str) -> Trajectory:
         """Retrieve the trajectory for a session."""
         trajectory = self._trajectories.get(session_id)
@@ -109,13 +118,16 @@ class TrajectoryRecorder:
             serializable_steps.append(step_dict)
 
         # Write trajectory JSON (no base64)
-        trajectory_data = {
+        trajectory_data: dict[str, Any] = {
             "session_id": trajectory.session_id,
             "task_name": trajectory.task_name,
             "env_type": trajectory.env_type,
             "total_steps": len(trajectory.steps),
             "steps": serializable_steps,
         }
+
+        if trajectory.evaluation:
+            trajectory_data["evaluation"] = trajectory.evaluation
 
         trajectory_file = session_dir / "trajectory.json"
         trajectory_file.write_text(json.dumps(trajectory_data, indent=2))
