@@ -281,3 +281,62 @@ class TestTrajectoryRecorder:
         trajectory_json = json.loads((saved_path / "trajectory.json").read_text())
         for step in trajectory_json["steps"]:
             assert "screenshot_base64" not in step.get("observation", {})
+
+    def test_set_evaluation(self) -> None:
+        """set_evaluation must attach scores to the trajectory."""
+        from axiom.core.trajectory import TrajectoryRecorder
+
+        recorder = TrajectoryRecorder()
+        recorder.start_session("sess_eval", task_name="test", env_type="json")
+        recorder.set_evaluation("sess_eval", {"completion": 1.0, "safety": 0.85})
+
+        trajectory = recorder.get_trajectory("sess_eval")
+        assert trajectory.evaluation == {"completion": 1.0, "safety": 0.85}
+
+    def test_save_trajectory_includes_evaluation(self, tmp_path: Path) -> None:
+        """Saved trajectory JSON must include evaluation when set."""
+        import json
+
+        from axiom.core.trajectory import TrajectoryRecorder
+
+        recorder = TrajectoryRecorder()
+        recorder.start_session("sess_eval2", task_name="test", env_type="json")
+        recorder.record_step(
+            session_id="sess_eval2",
+            step_num=1,
+            action={"type": "api_call", "value": "add_todo"},
+            observation={"state": {}},
+            reward=1.0,
+            terminated=True,
+            truncated=False,
+        )
+        scores = {"completion": 1.0, "efficiency": 0.9, "accuracy": 1.0, "safety": 1.0}
+        recorder.set_evaluation("sess_eval2", scores)
+        saved_path = recorder.save(session_id="sess_eval2", trajectory_dir=tmp_path)
+
+        trajectory_json = json.loads((saved_path / "trajectory.json").read_text())
+        assert "evaluation" in trajectory_json
+        assert trajectory_json["evaluation"]["completion"] == 1.0
+        assert trajectory_json["evaluation"]["efficiency"] == 0.9
+
+    def test_save_trajectory_no_evaluation_omits_key(self, tmp_path: Path) -> None:
+        """Saved trajectory JSON must omit evaluation when not set."""
+        import json
+
+        from axiom.core.trajectory import TrajectoryRecorder
+
+        recorder = TrajectoryRecorder()
+        recorder.start_session("sess_noeval", task_name="test", env_type="json")
+        recorder.record_step(
+            session_id="sess_noeval",
+            step_num=1,
+            action={"type": "api_call", "value": "add_todo"},
+            observation={"state": {}},
+            reward=0.0,
+            terminated=False,
+            truncated=False,
+        )
+        saved_path = recorder.save(session_id="sess_noeval", trajectory_dir=tmp_path)
+
+        trajectory_json = json.loads((saved_path / "trajectory.json").read_text())
+        assert "evaluation" not in trajectory_json
