@@ -4,8 +4,7 @@
 
 > Real browsers. Real terminals. Real evaluation. Not simulated — agents interact with actual applications through Playwright, execute real shell commands in sandboxes, and are scored across four dimensions.
 
-<!-- Replace with your actual recording -->
-<!-- ![axiom-ai demo](https://github.com/ayushgundecha/axiom-ai/assets/demo.gif) -->
+https://github.com/user-attachments/assets/9580ca2b-677b-4cd5-82cb-965bfc0d26e8
 
 ---
 
