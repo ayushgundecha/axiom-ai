@@ -1,211 +1,279 @@
 # axiom-ai
 
-A training gym for AI agents operating in real digital environments.
+**Training gym for AI agents operating in real digital environments.**
 
-axiom-ai provides infrastructure for training and evaluating AI agents in controlled, reproducible environments. Agents interact with real web applications via Playwright browser automation, execute shell commands in sandboxed terminals, and are evaluated across multiple dimensions — completion, efficiency, accuracy, and safety.
+> Real browsers. Real terminals. Real evaluation. Not simulated — agents interact with actual applications through Playwright, execute real shell commands in sandboxes, and are scored across four dimensions.
+
+<!-- Replace with your actual recording -->
+<!-- ![axiom-ai demo](https://github.com/ayushgundecha/axiom-ai/assets/demo.gif) -->
+
+---
+
+## The Problem
+
+Training AI agents to use computers requires environments that are:
+
+- **Real** — not mocked APIs or synthetic DOM trees, but actual applications running in browsers and terminals
+- **Reproducible** — every episode starts from the exact same state (both client and server)
+- **Measurable** — evaluation that goes beyond pass/fail to capture *how well* the agent performed
+- **Scalable** — infrastructure that supports thousands of parallel episodes for RL training
+
+Most agent frameworks give you one of these. axiom-ai gives you all four.
+
+---
+
+## What It Does
+
+```
+Agent observes environment → decides action → takes action → gets reward → repeat
+                ↓                                              ↓
+         screenshot + DOM                              trajectory recorded
+         terminal output                               evaluation scored
+         JSON state                                    training data saved
+```
+
+### Three Real Environments
+
+| Environment | What's Happening | Agent Sees | Agent Does |
+|------------|-----------------|------------|------------|
+| **WebApp** | Playwright controls a real Chromium browser running a real web app | Screenshots + simplified DOM tree | Click, type, scroll, press keys |
+| **CLI** | Async subprocess in a sandboxed temp directory with 24 allowlisted commands | Terminal output + file listing | Shell commands (`grep`, `mkdir`, `cat`, etc.) |
+| **JSON** | Pure Python state machine — zero dependencies, instant execution | JSON state dict | API calls (`add_todo`, `complete_todo`) |
+
+### Multi-Signal Evaluation
+
+Every task is scored across four dimensions, not just pass/fail:
+
+| Metric | What It Measures | Example |
+|--------|-----------------|---------|
+| **Completion** | Did it finish the task? | All 3 todos added → 1.0 |
+| **Efficiency** | Steps vs optimal | 6 steps when optimal is 6 → 1.0 |
+| **Accuracy** | Quality of the final state | 2/3 correct → 0.67 |
+| **Safety** | Avoided destructive actions? | No invalid commands → 1.0 |
+
+**Rule-based evaluation** for objective tasks (count DOM elements, check file existence).
+**LLM-as-judge evaluation** for subjective tasks (Claude scores against rubrics — "Is this README professional?"). Combined via a weighted `CompositeEvaluator`.
+
+### Trajectory Recording
+
+Every episode produces training-ready data:
+
+```
+trajectories/
+  a1b2c3d4e5f6/
+    trajectory.json          # 5KB — metadata + actions + rewards + evaluation
+    screenshots/
+      step_1.png             # what the browser showed
+      step_2.png
+      ...
+```
+
+Screenshots are saved as separate PNGs — not inline base64. A 20-step episode would create a 27MB+ JSON file with base64. Separate files keep trajectories small and parseable.
+
+### Parallel Execution
+
+Run N episodes concurrently across M tasks with bounded concurrency:
+
+```bash
+python scripts/parallel_benchmark.py --concurrency 5 --agent claude
+```
+
+asyncio semaphore-based — each episode is isolated, failures don't cascade, results aggregated with per-agent statistics.
+
+---
+
+## Quick Start
+
+```bash
+# Install
+python3 -m venv .venv && source .venv/bin/activate
+make dev
+
+# Start the target web app
+cd apps/todo-app && npm install && npm run build && node dist/server.js &
+
+# Start axiom server
+uvicorn axiom.api.app:create_app --factory --port 8000
+
+# Run an agent
+python scripts/run_demo.py --env cli --task analyze_logs --agent claude
+python scripts/run_demo.py --env webapp --task add_three_todos --agent claude
+
+# Run parallel benchmark
+python scripts/parallel_benchmark.py --concurrency 3 --agent random
+
+# Open the mission control dashboard
+open http://localhost:8000/static/demo.html
+
+# Open the trajectory replay UI
+open http://localhost:8000/static/replay.html
+```
+
+Docker:
+```bash
+docker-compose up --build
+# axiom: http://localhost:8000 | todo-app: http://localhost:3000
+```
+
+---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                      axiom-ai Server                          │
-│                    (Python + FastAPI)                          │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                  Environment Registry                    │ │
-│  │  Pluggable: register any env that implements BaseEnv     │ │
-│  └───────┬──────────────┬──────────────────┬───────────────┘ │
-│          │              │                  │                  │
-│  ┌───────▼─────┐ ┌──────▼───────┐ ┌───────▼──────────┐      │
-│  │  JSON Env   │ │  WebApp Env  │ │   CLI Env        │      │
-│  │  (baseline) │ │  (Playwright)│ │   (subprocess)   │      │
-│  │             │ │              │ │                   │      │
-│  │ Pure Python │ │ Real HTML/JS │ │  Shell commands   │      │
-│  │ dict state  │ │ app in Docker│ │  in sandboxed dir │      │
-│  └─────────────┘ │              │ └───────────────────┘      │
-│                  │ Screenshots  │                             │
-│                  │ DOM/a11y tree│                             │
-│                  │ Click / Type │                             │
-│                  └──────────────┘                             │
-│                                                               │
-│  ┌─────────────────────────────────────────────────────────┐ │
-│  │                    Core Engine                           │ │
-│  │  Session Manager  ·  Trajectory Recorder                 │ │
-│  │  Evaluation Engine  ·  Task Loader (YAML)                │ │
-│  └─────────────────────┬───────────────────────────────────┘ │
-│                        │                                      │
-│  ┌─────────────────────▼───────────────────────────────────┐ │
-│  │                  REST API (FastAPI)                       │ │
-│  │  POST /sessions           → create session                │ │
-│  │  POST /sessions/:id/step  → take action                   │ │
-│  │  GET  /sessions/:id/observe → get state + screenshot      │ │
-│  │  POST /sessions/:id/evaluate  → multi-signal scores       │ │
-│  └─────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
-                            │ HTTP
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│                    Agent (Claude API)                          │
-│  Observes: DOM tree + screenshot + task description            │
-│  Decides:  action (click, type, press_key, run_command, etc)  │
-│  Loops:    until task complete or max steps reached            │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        axiom-ai Server                            │
+│                       (Python + FastAPI)                           │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                   Environment Registry                        │ │
+│  │   Pluggable: register any class that implements BaseEnv       │ │
+│  └────────┬───────────────┬───────────────────┬─────────────────┘ │
+│           │               │                   │                    │
+│  ┌────────▼──────┐ ┌──────▼────────┐ ┌───────▼───────────┐       │
+│  │   JSON Env    │ │  WebApp Env   │ │    CLI Env         │       │
+│  │  Pure Python  │ │  Playwright   │ │  Async subprocess  │       │
+│  │  dict state   │ │  + Chromium   │ │  24 safe commands  │       │
+│  └───────────────┘ │  screenshots  │ │  path traversal    │       │
+│                    │  DOM parser   │ │  detection          │       │
+│                    └───────────────┘ └────────────────────┘       │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐ │
+│  │                      Core Engine                               │ │
+│  │  Session Manager · Trajectory Recorder · Task Loader (YAML)    │ │
+│  │  DefaultEvaluator · LLMJudgeEvaluator · CompositeEvaluator     │ │
+│  │  ParallelRunner (asyncio semaphore-bounded)                    │ │
+│  └───────────────────────┬──────────────────────────────────────┘ │
+│                          │                                         │
+│  ┌───────────────────────▼──────────────────────────────────────┐ │
+│  │                    REST API (FastAPI)                          │ │
+│  │  POST /sessions             → create session + reset env      │ │
+│  │  POST /sessions/:id/step    → execute action, record step     │ │
+│  │  POST /sessions/:id/evaluate → multi-signal scores            │ │
+│  │  GET  /trajectories/saved   → list saved trajectories         │ │
+│  └──────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────┘
+                             │ HTTP
+                             ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                      AI Agent (Claude API)                        │
+│  Observes: screenshot + DOM tree + task description               │
+│  Decides:  next action via vision + reasoning                     │
+│  Records:  full trajectory with evaluation scores                 │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-## Quick Start
+---
 
-### Local development
+## Task Examples
 
-```bash
-# 1. Install
-python3 -m venv .venv && source .venv/bin/activate
-make dev    # installs deps + Playwright chromium
-
-# 2. Start the todo app (target for WebApp environment)
-cd apps/todo-app && npm install && npm run build && node dist/server.js &
-
-# 3. Start axiom server
-uvicorn axiom.api.app:create_app --factory --port 8000
-
-# 4. Run a demo
-python scripts/run_demo.py --env json --task create_and_complete --agent random
-python scripts/run_demo.py --env cli --task organize_files --agent random
-
-# With Claude (requires ANTHROPIC_API_KEY):
-export ANTHROPIC_API_KEY=sk-ant-...
-python scripts/run_demo.py --env webapp --task add_three_todos --agent claude
-
-# 5. Run benchmark
-python scripts/benchmark.py --agent random
+**Log analysis** (CLI — 15 steps, Claude analyzing real server logs):
+```yaml
+name: "analyze_logs"
+env: "cli"
+description: "Analyze server log files. Count errors, extract them, produce a report."
+initial_state:
+  files:
+    - path: "logs/api_server.log"
+      content: "2024-01-15 10:02:45 ERROR Connection refused: upstream service timeout..."
+    - path: "logs/auth_service.log"
+      content: "2024-01-15 10:02:30 ERROR Invalid token: signature verification failed..."
+goal:
+  type: "file_content_matches"
+  checks:
+    - path: "report.txt"
+      contains: "ERROR"
+llm_evaluation:
+  rubric:
+    completion: "Does report.txt exist with error/warning counts?"
+    accuracy: "Are the counts correct? (10 ERRORs, 5 WARNINGs across 3 files)"
+    efficiency: "Were grep/sort/wc used efficiently?"
 ```
 
-### Docker
-
-```bash
-docker-compose up --build
-# axiom server: http://localhost:8000
-# todo app:     http://localhost:3000
-
-# Run agents against the dockerized stack:
-python scripts/run_demo.py --env webapp --task add_three_todos --agent claude
-```
-
-## Environment Types
-
-| Environment | Interface | Observation | Maps To |
-|------------|-----------|-------------|---------|
-| **WebApp** | Playwright (browser) | Screenshot + DOM tree | OSWorld |
-| **CLI** | subprocess (shell) | Command output + file listing | Terminal-Bench |
-| **JSON** | Pure Python (dict) | JSON state | Baseline |
-
-## Evaluation Metrics
-
-Every task is scored across four dimensions:
-
-| Metric | Description | Range |
-|--------|-------------|-------|
-| **Completion** | Did the agent finish the task? | 0-1 |
-| **Efficiency** | Steps taken vs optimal | 0-1 |
-| **Accuracy** | How correct is the final state? | 0-1 |
-| **Safety** | Did it avoid invalid/destructive actions? | 0-1 |
-
-## Task Configuration
-
-Tasks are defined as YAML files with goal specifications:
-
+**Browser automation** (WebApp — 9 steps, Playwright + screenshots):
 ```yaml
 name: "add_three_todos"
 env: "webapp"
-description: "Add three todos to the todo app."
 app_url: "http://localhost:3000"
 observation_mode: "hybrid"    # DOM + screenshots
-
 goal:
   type: "element_count"
   selector: "[data-testid^='todo-item-']"
   count: 3
-
-max_steps: 12
-optimal_steps: 6
 ```
+
+---
+
+## Engineering
+
+```
+100 unit tests passing          mypy --strict across 31 files
+0 Any escape hatches            Pydantic v2 runtime validation
+structlog with session IDs      Custom exception hierarchy
+Async context managers          GitHub Actions CI
+Husky pre-commit hooks          ruff lint + format
+```
+
+```bash
+make check   # runs: ruff check + mypy --strict + pytest (100 tests)
+```
+
+---
+
+## Design Decisions
+
+**Why async context managers?** At scale, Playwright browsers leak memory if not closed. `async with WebAppEnvironment(config) as env:` guarantees cleanup even when exceptions occur. At thousands of episodes per experiment, this matters.
+
+**Why reset both client AND server state?** Refreshing the browser doesn't clear the todo app's in-memory store. `reset()` calls `POST /api/reset` on the target app. True reproducibility requires resetting everything.
+
+**Why separate API schemas from domain models?** HTTP concerns shouldn't leak into business logic. `schemas.py` handles serialization; `models.py` handles validation. Different layers, different responsibilities.
+
+**Why full-command inspection for CLI sandboxing?** Checking only the first word (`cat` is allowed) misses `cat ../../etc/passwd`. The full command string is inspected for path traversal.
+
+**Why LLM-as-judge?** Rule-based evaluation breaks on subjective tasks. "Write a professional README" can't be checked with `querySelector`. The LLM judge scores against rubrics, combined with rule-based scores via `CompositeEvaluator`.
+
+---
 
 ## Project Structure
 
 ```
-axiom-ai/
-├── axiom/                    # Python package
-│   ├── models.py             # Pydantic data models (Action, Observation, StepResult, etc.)
-│   ├── config.py             # pydantic-settings configuration
-│   ├── exceptions.py         # Exception hierarchy
-│   ├── logging.py            # structlog configuration
-│   ├── core/                 # Framework machinery
-│   │   ├── base_env.py       # BaseEnvironment ABC (async context manager)
-│   │   ├── registry.py       # Environment registry (pluggable)
-│   │   ├── session.py        # Session lifecycle manager
-│   │   ├── trajectory.py     # Trajectory recording (screenshots as separate PNGs)
-│   │   ├── evaluator.py      # Evaluator protocol
-│   │   └── task_loader.py    # YAML task config loader
-│   ├── envs/                 # Concrete environments
-│   │   ├── json_env.py       # JSON state machine (baseline)
-│   │   ├── webapp_env.py     # Playwright browser automation
-│   │   └── cli_env.py        # Sandboxed shell execution
-│   ├── api/                  # FastAPI REST API
-│   │   ├── app.py            # Application factory + lifespan
-│   │   ├── schemas.py        # API request/response models
-│   │   ├── middleware.py      # Request ID + error handling
-│   │   └── routes/           # Endpoint modules
-│   └── utils/                # Utilities
-│       ├── dom_parser.py     # HTML → simplified DOM (token-efficient)
-│       └── screenshot.py     # Screenshot encode/decode
-├── agents/                   # AI agents (interact via HTTP)
-│   ├── claude_agent.py       # Claude with vision
-│   └── random_agent.py       # Random baseline
-├── apps/todo-app/            # TypeScript Express app (Docker target)
-├── tasks/                    # YAML task definitions
-├── scripts/                  # Demo and benchmark runners
-├── tests/                    # pytest suite (79 unit + 8 integration)
-├── Dockerfile                # axiom server (multi-stage, non-root)
-└── docker-compose.yml        # Full orchestration
+axiom/                       # Python package (the framework)
+  models.py                  # ALL Pydantic models (Action, Observation, StepResult, etc.)
+  config.py                  # pydantic-settings: env vars with AXIOM_ prefix
+  exceptions.py              # AxiomError → EnvironmentError, SessionError, etc.
+  core/
+    base_env.py              # BaseEnvironment ABC (Gymnasium interface)
+    registry.py              # @register_env decorator, pluggable discovery
+    session.py               # Session lifecycle with asyncio.Lock
+    trajectory.py            # Screenshots as separate PNGs, not base64
+    evaluator.py             # DefaultEvaluator + CompositeEvaluator
+    llm_judge.py             # LLM-as-judge via Claude API
+    parallel_runner.py       # Bounded-concurrency episode execution
+    task_loader.py           # YAML → validated TaskConfig
+  envs/
+    webapp_env.py            # Playwright + Chromium (maps to OSWorld)
+    cli_env.py               # Sandboxed subprocess (maps to Terminal-Bench)
+    json_env.py              # Pure Python state machine (baseline)
+  api/
+    app.py                   # Application factory + lifespan
+    routes/                  # sessions, environments, tasks, trajectories, health
+agents/
+  claude_agent.py            # Claude with vision (screenshots + DOM)
+  random_agent.py            # Random baseline for calibration
+apps/todo-app/               # TypeScript Express target application
+tasks/                       # YAML task definitions (8 tasks across 3 envs)
+static/
+  demo.html                  # Mission control dashboard
+  replay.html                # Trajectory step-through viewer
+tests/                       # 100 unit tests + 8 integration tests
 ```
 
-## Development
-
-```bash
-make lint        # ruff check
-make format      # ruff format
-make typecheck   # mypy --strict
-make test        # pytest (unit tests only)
-make check       # all three above
-```
-
-## Design Decisions
-
-**Why async context managers on environments?** At scale (thousands of RL episodes), Playwright browser instances leak memory if not properly closed. `async with WebAppEnvironment(config) as env:` guarantees `cleanup()` runs even when exceptions occur.
-
-**Why separate API schemas from domain models?** HTTP concerns (what the client sends) shouldn't leak into business logic (what the environment processes). `axiom/api/schemas.py` handles serialization; `axiom/models.py` handles validation.
-
-**Why reset both client and server state?** A real web app has server-side state (database, in-memory store). Just refreshing the browser page doesn't clear it. `reset()` calls `/api/reset` on the target app — true reproducibility requires resetting everything.
-
-**Why trajectory screenshots as separate files?** A single episode can generate 50+ screenshots. Storing them as inline base64 in a JSON file creates 100MB+ trajectories that are slow to parse. Separate PNGs keep the JSON small and the images accessible.
-
-**Why full-command inspection for CLI sandboxing?** Checking only the first word (`cat` is allowed) misses `cat ../../etc/passwd`. The full command string is inspected for path traversal and dangerous patterns.
+---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Orchestrator | Python 3.11+ / FastAPI |
-| Browser automation | Playwright |
-| Target web app | TypeScript / Express |
-| CLI sandbox | asyncio subprocess |
-| Containers | Docker / docker-compose |
-| AI agent | Anthropic Claude API (vision) |
-| Data models | Pydantic v2 (strict) |
-| Configuration | pydantic-settings |
-| Logging | structlog |
-| Testing | pytest / pytest-asyncio |
-| Linting | ruff |
-| Type checking | mypy (strict mode) |
+Python 3.11+ · FastAPI · Playwright · Pydantic v2 · structlog · pydantic-settings · Anthropic Claude API · Docker · pytest · ruff · mypy strict
+
+---
 
 ## License
 
