@@ -16,9 +16,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from axiom.api.middleware import RequestIdMiddleware, register_exception_handlers
-from axiom.api.routes import environments, health, sessions, tasks
+from axiom.api.routes import environments, health, sessions, tasks, trajectories
 from axiom.config import get_settings
 from axiom.core.registry import EnvironmentRegistry
 from axiom.core.session import SessionManager
@@ -94,5 +95,19 @@ def create_app() -> FastAPI:
     app.include_router(environments.router)
     app.include_router(tasks.router)
     app.include_router(sessions.router)
+    app.include_router(trajectories.router)
+
+    # Static files: replay UI and saved trajectory data
+    static_dir = Path("static")
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory="static"), name="static")
+
+    trajectory_dir = settings.trajectory_dir
+    if trajectory_dir.exists():
+        app.mount(
+            "/trajectories",
+            StaticFiles(directory=str(trajectory_dir)),
+            name="trajectories",
+        )
 
     return app

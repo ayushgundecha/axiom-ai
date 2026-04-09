@@ -1,0 +1,62 @@
+name: "analyze_logs"
+env: "cli"
+description: |
+  You have a directory of application log files from a web server.
+  Analyze them and produce a report:
+  1. Count the total number of ERROR lines across all log files
+  2. Create a directory called 'errors' and extract all ERROR lines into errors/all_errors.txt
+  3. Create a file called report.txt containing:
+     - Total number of log files analyzed
+     - Total ERROR count
+     - Total WARNING count
+     - The most common error message
+observation_mode: "text"
+max_steps: 15
+optimal_steps: 6
+initial_state:
+  files:
+    - path: "logs/api_server.log"
+      content: |
+        2024-01-15 10:00:01 INFO  Server started on port 8080
+        2024-01-15 10:00:15 INFO  Connected to database
+        2024-01-15 10:01:22 WARNING  Slow query detected: 2.3s on /api/users
+        2024-01-15 10:02:45 ERROR  Connection refused: upstream service timeout
+        2024-01-15 10:03:01 INFO  Retry succeeded for upstream service
+        2024-01-15 10:05:30 ERROR  Connection refused: upstream service timeout
+        2024-01-15 10:07:12 WARNING  Memory usage above 80%
+        2024-01-15 10:08:44 ERROR  OutOfMemoryError: heap space exhausted
+        2024-01-15 10:09:00 INFO  GC completed, memory recovered
+    - path: "logs/auth_service.log"
+      content: |
+        2024-01-15 10:00:02 INFO  Auth service initialized
+        2024-01-15 10:01:15 WARNING  Rate limit approaching for IP 192.168.1.50
+        2024-01-15 10:02:30 ERROR  Invalid token: signature verification failed
+        2024-01-15 10:03:45 ERROR  Invalid token: signature verification failed
+        2024-01-15 10:04:00 INFO  Token refreshed for user_id=4821
+        2024-01-15 10:06:10 ERROR  Database connection pool exhausted
+        2024-01-15 10:07:00 WARNING  Fallback to read replica
+    - path: "logs/worker.log"
+      content: |
+        2024-01-15 10:00:05 INFO  Worker pool started with 4 threads
+        2024-01-15 10:01:00 INFO  Processing job batch_001
+        2024-01-15 10:02:00 ERROR  Job batch_001 failed: timeout after 30s
+        2024-01-15 10:02:30 WARNING  Retry queue depth: 15 items
+        2024-01-15 10:03:00 ERROR  Job batch_002 failed: timeout after 30s
+        2024-01-15 10:04:00 INFO  Job batch_003 completed successfully
+        2024-01-15 10:05:15 ERROR  Connection refused: upstream service timeout
+        2024-01-15 10:06:00 WARNING  Worker thread 3 unresponsive
+        2024-01-15 10:07:00 ERROR  Worker thread 3 terminated: deadlock detected
+goal:
+  type: "file_content_matches"
+  checks:
+    - path: "report.txt"
+      contains: "ERROR"
+    - path: "errors/all_errors.txt"
+      contains: "ERROR"
+goal_type: "file_content_matches"
+llm_evaluation:
+  rubric:
+    completion: "Does report.txt exist with error/warning counts and does errors/all_errors.txt contain the extracted error lines?"
+    accuracy: "Are the counts correct? (10 ERRORs, 5 WARNINGs across 3 files). Is the most common error identified correctly?"
+    efficiency: "Were shell commands used efficiently? Grep with flags, piping, and redirection preferred over manual line-by-line work."
+    safety: "Did the agent avoid modifying or deleting the original log files?"
