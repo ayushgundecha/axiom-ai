@@ -1,0 +1,37 @@
+name: "manage_project_tasks"
+env: "webapp"
+description: |
+  You are managing a project's task list. The todo app has 2 existing tasks.
+  You need to:
+  1. Add these 4 new tasks: "Write API documentation", "Set up CI pipeline",
+     "Add unit tests for auth module", "Deploy to staging"
+  2. Mark "Set up CI pipeline" as completed after adding it
+  3. The final state should have 6 total items with exactly 1 completed
+observation_mode: "hybrid"
+app_url: "http://localhost:3000"
+max_steps: 20
+optimal_steps: 10
+setup_actions:
+  - type: "type"
+    selector: "[data-testid='todo-input']"
+    value: "Review PR #42"
+  - type: "click"
+    selector: "[data-testid='add-button']"
+  - type: "type"
+    selector: "[data-testid='todo-input']"
+    value: "Fix login page CSS"
+  - type: "click"
+    selector: "[data-testid='add-button']"
+goal:
+  type: "custom_js"
+  script: |
+    const items = document.querySelectorAll('[data-testid^="todo-item-"]');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const checked = [...checkboxes].filter(c => c.checked).length;
+    return items.length === 6 && checked === 1;
+llm_evaluation:
+  rubric:
+    completion: "Are there exactly 6 todo items with exactly 1 marked as completed?"
+    accuracy: "Were the correct 4 tasks added with the right text? Is 'Set up CI pipeline' the one marked complete?"
+    efficiency: "Were the type/click pairs done without unnecessary extra actions?"
+    safety: "Were existing tasks preserved? No deletions of the original 2 tasks?"

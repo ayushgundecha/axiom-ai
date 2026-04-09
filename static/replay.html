@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>axiom-ai | Trajectory Replay</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-hover: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --yellow: #d29922;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --radius: 8px;
+    --font: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+  .header .meta {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .header .meta span { color: var(--text); font-weight: 500; }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar - trajectory list */
+  .sidebar {
+    width: 280px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-card);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .sidebar h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    padding: 16px 16px 8px;
+  }
+  .traj-item {
+    display: block;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+  .traj-item:hover { background: var(--bg-hover); }
+  .traj-item.active { background: var(--bg-hover); border-left: 3px solid var(--accent); }
+  .traj-item .name { font-size: 13px; font-weight: 500; }
+  .traj-item .info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Content area */
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Controls bar */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .step-label {
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 100px;
+  }
+  .controls button {
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .controls button:hover { background: var(--border); border-color: var(--text-muted); }
+  .controls button:disabled { opacity: 0.3; cursor: not-allowed; }
+  .controls button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .speed-select {
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    font-family: var(--font);
+    font-size: 13px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.2s;
+  }
+
+  /* Viewer */
+  .viewer {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Observation panel */
+  .obs-panel {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .obs-panel img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .obs-panel pre {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow: auto;
+    width: 100%;
+    max-height: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* Info panel */
+  .info-panel {
+    width: 340px;
+    border-left: 1px solid var(--border);
+    background: var(--bg-card);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .info-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-section h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .action-display {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .action-type {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .action-target {
+    color: var(--purple);
+  }
+  .action-value {
+    color: var(--green);
+  }
+
+  /* Reward display */
+  .reward-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 4px 0;
+  }
+  .reward-value { font-weight: 600; }
+  .reward-positive { color: var(--green); }
+  .reward-negative { color: var(--red); }
+  .reward-zero { color: var(--text-muted); }
+
+  /* Eval bars */
+  .eval-metric {
+    margin-bottom: 10px;
+  }
+  .eval-metric .label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+  .eval-metric .label .name { color: var(--text-muted); }
+  .eval-metric .label .value { font-weight: 600; }
+  .eval-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .eval-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .eval-bar-fill.high { background: var(--green); }
+  .eval-bar-fill.mid { background: var(--yellow); }
+  .eval-bar-fill.low { background: var(--red); }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .status-badge.running { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .status-badge.done { background: rgba(63,185,80,0.15); color: var(--green); }
+  .status-badge.timeout { background: rgba(210,153,34,0.15); color: var(--yellow); }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    gap: 12px;
+    padding: 40px;
+    text-align: center;
+  }
+  .empty-state .icon { font-size: 48px; opacity: 0.3; }
+  .empty-state p { font-size: 14px; max-width: 400px; line-height: 1.6; }
+
+  /* Keyboard hints */
+  .kbd-hints {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 8px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  kbd {
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-size: 11px;
+    font-family: var(--font);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>axiom-ai <span style="color:var(--text-muted);font-weight:400">/ trajectory replay</span></h1>
+  <div class="meta" id="header-meta"></div>
+</div>
+
+<div class="main">
+  <div class="sidebar" id="sidebar">
+    <h2>Trajectories</h2>
+    <div id="traj-list">
+      <div class="empty-state" style="padding:24px">
+        <p style="font-size:12px">Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="empty-state" id="empty-state">
+      <div class="icon">&#9654;</div>
+      <p>Select a trajectory from the sidebar or pass <kbd>?session=ID</kbd> in the URL to start replaying.</p>
+    </div>
+
+    <div id="replay-view" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="controls">
+        <span class="step-label" id="step-label">Step 0/0</span>
+        <button id="btn-prev" title="Previous step">&larr; Prev</button>
+        <button id="btn-next" title="Next step">Next &rarr;</button>
+        <button id="btn-play" title="Toggle auto-play">&#9654; Play</button>
+        <select class="speed-select" id="speed-select" title="Playback speed">
+          <option value="500">0.5s</option>
+          <option value="1000" selected>1.0s</option>
+          <option value="2000">2.0s</option>
+          <option value="3000">3.0s</option>
+        </select>
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="status-badge running" id="step-status"></span>
+      </div>
+
+      <div class="viewer">
+        <div class="obs-panel" id="obs-panel"></div>
+        <div class="info-panel">
+          <div class="info-section">
+            <h3>Action</h3>
+            <div class="action-display" id="action-display">-</div>
+          </div>
+          <div class="info-section">
+            <h3>Reward</h3>
+            <div id="reward-display"></div>
+          </div>
+          <div class="info-section" id="eval-section" style="display:none">
+            <h3>Evaluation</h3>
+            <div id="eval-display"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="kbd-hints">
+  <span><kbd>&larr;</kbd> Previous</span>
+  <span><kbd>&rarr;</kbd> Next</span>
+  <span><kbd>Space</kbd> Play/Pause</span>
+  <span><kbd>Home</kbd> First</span>
+  <span><kbd>End</kbd> Last</span>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // State
+  let trajectory = null;
+  let currentStep = 0;
+  let playing = false;
+  let playTimer = null;
+  let baseTrajectoryUrl = '';
+
+  // DOM refs
+  const headerMeta = document.getElementById('header-meta');
+  const trajList = document.getElementById('traj-list');
+  const emptyState = document.getElementById('empty-state');
+  const replayView = document.getElementById('replay-view');
+  const stepLabel = document.getElementById('step-label');
+  const btnPrev = document.getElementById('btn-prev');
+  const btnNext = document.getElementById('btn-next');
+  const btnPlay = document.getElementById('btn-play');
+  const speedSelect = document.getElementById('speed-select');
+  const progressBar = document.getElementById('progress-bar');
+  const progressFill = document.getElementById('progress-fill');
+  const stepStatus = document.getElementById('step-status');
+  const obsPanel = document.getElementById('obs-panel');
+  const actionDisplay = document.getElementById('action-display');
+  const rewardDisplay = document.getElementById('reward-display');
+  const evalSection = document.getElementById('eval-section');
+  const evalDisplay = document.getElementById('eval-display');
+
+  // Load trajectory list
+  async function loadTrajectoryList() {
+    try {
+      const resp = await fetch('/trajectories/saved');
+      if (!resp.ok) throw new Error('Failed to load trajectory list');
+      const data = await resp.json();
+      renderTrajectoryList(data);
+    } catch (e) {
+      trajList.innerHTML = '<div class="empty-state" style="padding:24px"><p style="font-size:12px;color:var(--text-muted)">No saved trajectories found. Run an agent episode first.</p></div>';
+    }
+  }
+
+  function renderTrajectoryList(items) {
+    if (!items || items.length === 0) {
+      trajList.innerHTML = '<div class="empty-state" style="padding:24px"><p style="font-size:12px;color:var(--text-muted)">No saved trajectories yet.</p></div>';
+      return;
+    }
+    trajList.innerHTML = items.map(t => `
+      <a class="traj-item" data-session="${t.session_id}" href="?session=${t.session_id}">
+        <div class="name">${t.task_name || t.session_id}</div>
+        <div class="info">${t.env_type || '?'} &middot; ${t.total_steps || '?'} steps &middot; ${t.session_id.slice(0,8)}</div>
+      </a>
+    `).join('');
+
+    trajList.querySelectorAll('.traj-item').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sid = el.dataset.session;
+        history.pushState(null, '', '?session=' + sid);
+        loadTrajectory(sid);
+      });
+    });
+  }
+
+  // Load a trajectory
+  async function loadTrajectory(sessionId) {
+    try {
+      baseTrajectoryUrl = '/trajectories/' + sessionId;
+      const resp = await fetch(baseTrajectoryUrl + '/trajectory.json');
+      if (!resp.ok) throw new Error('Trajectory not found');
+      trajectory = await resp.json();
+      currentStep = 0;
+      stopPlaying();
+      showReplayView();
+      renderStep();
+      highlightSidebar(sessionId);
+    } catch (e) {
+      obsPanel.innerHTML = '<div class="empty-state"><p>Failed to load trajectory: ' + e.message + '</p></div>';
+    }
+  }
+
+  function highlightSidebar(sessionId) {
+    trajList.querySelectorAll('.traj-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.session === sessionId);
+    });
+  }
+
+  function showReplayView() {
+    emptyState.style.display = 'none';
+    replayView.style.display = 'flex';
+
+    headerMeta.innerHTML = `
+      <div>Task: <span>${trajectory.task_name || '?'}</span></div>
+      <div>Env: <span>${trajectory.env_type || '?'}</span></div>
+      <div>Steps: <span>${trajectory.total_steps || '?'}</span></div>
+      <div>Session: <span>${(trajectory.session_id || '?').slice(0,8)}</span></div>
+    `;
+  }
+
+  // Render current step
+  function renderStep() {
+    if (!trajectory || !trajectory.steps || trajectory.steps.length === 0) return;
+
+    const total = trajectory.steps.length;
+    const step = trajectory.steps[currentStep];
+
+    // Step label & progress
+    stepLabel.textContent = `Step ${step.step_num || currentStep + 1}/${total}`;
+    const pct = ((currentStep + 1) / total * 100).toFixed(1);
+    progressFill.style.width = pct + '%';
+
+    // Status badge
+    if (step.terminated) {
+      stepStatus.textContent = 'DONE';
+      stepStatus.className = 'status-badge done';
+    } else if (step.truncated) {
+      stepStatus.textContent = 'TIMEOUT';
+      stepStatus.className = 'status-badge timeout';
+    } else {
+      stepStatus.textContent = 'RUNNING';
+      stepStatus.className = 'status-badge running';
+    }
+
+    // Buttons
+    btnPrev.disabled = currentStep === 0;
+    btnNext.disabled = currentStep >= total - 1;
+
+    // Observation panel
+    renderObservation(step);
+
+    // Action
+    renderAction(step.action);
+
+    // Reward
+    renderReward(step);
+
+    // Evaluation (show on last step if available)
+    if (trajectory.evaluation && Object.keys(trajectory.evaluation).length > 0) {
+      evalSection.style.display = '';
+      renderEvaluation(trajectory.evaluation);
+    } else {
+      evalSection.style.display = 'none';
+    }
+  }
+
+  function renderObservation(step) {
+    const obs = step.observation || {};
+
+    // Try screenshot first
+    const screenshotUrl = baseTrajectoryUrl + '/screenshots/step_' + step.step_num + '.png';
+    if (trajectory.env_type === 'webapp') {
+      const img = new Image();
+      img.onload = () => { obsPanel.innerHTML = ''; obsPanel.appendChild(img); };
+      img.onerror = () => { renderTextObservation(obs); };
+      img.src = screenshotUrl;
+      img.alt = 'Step ' + step.step_num + ' screenshot';
+      return;
+    }
+
+    renderTextObservation(obs);
+  }
+
+  function renderTextObservation(obs) {
+    let text = '';
+    if (obs.text_output) {
+      text = obs.text_output;
+    } else if (obs.state) {
+      text = JSON.stringify(obs.state, null, 2);
+    } else if (obs.dom_tree) {
+      text = obs.dom_tree;
+    } else {
+      text = JSON.stringify(obs, null, 2);
+    }
+    obsPanel.innerHTML = '<pre>' + escapeHtml(text) + '</pre>';
+  }
+
+  function renderAction(action) {
+    if (!action) { actionDisplay.textContent = '-'; return; }
+    let html = '<span class="action-type">' + escapeHtml(action.type || '?') + '</span>';
+    if (action.selector) {
+      html += ' &rarr; <span class="action-target">' + escapeHtml(action.selector) + '</span>';
+    }
+    if (action.value) {
+      const val = String(action.value).length > 60
+        ? String(action.value).slice(0, 60) + '...'
+        : String(action.value);
+      html += '<br><span class="action-value">"' + escapeHtml(val) + '"</span>';
+    }
+    if (action.params) {
+      html += '<br><span style="color:var(--text-muted)">' + escapeHtml(JSON.stringify(action.params)) + '</span>';
+    }
+    actionDisplay.innerHTML = html;
+  }
+
+  function renderReward(step) {
+    let cumulative = 0;
+    for (let i = 0; i <= currentStep; i++) {
+      cumulative += trajectory.steps[i].reward || 0;
+    }
+    const r = step.reward || 0;
+    const cls = r > 0 ? 'reward-positive' : r < 0 ? 'reward-negative' : 'reward-zero';
+
+    rewardDisplay.innerHTML = `
+      <div class="reward-row">
+        <span>Step reward</span>
+        <span class="reward-value ${cls}">${r >= 0 ? '+' : ''}${r.toFixed(3)}</span>
+      </div>
+      <div class="reward-row">
+        <span>Cumulative</span>
+        <span class="reward-value">${cumulative.toFixed(3)}</span>
+      </div>
+    `;
+  }
+
+  function renderEvaluation(evaluation) {
+    const metrics = ['completion', 'efficiency', 'accuracy', 'safety'];
+    let html = '';
+    for (const m of metrics) {
+      const val = evaluation[m];
+      if (val === undefined) continue;
+      const pct = (val * 100).toFixed(0);
+      const cls = val >= 0.8 ? 'high' : val >= 0.5 ? 'mid' : 'low';
+      html += `
+        <div class="eval-metric">
+          <div class="label">
+            <span class="name">${m}</span>
+            <span class="value">${val.toFixed(3)}</span>
+          </div>
+          <div class="eval-bar">
+            <div class="eval-bar-fill ${cls}" style="width:${pct}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Integer fields
+    const extras = ['total_steps', 'optimal_steps', 'invalid_actions'];
+    for (const key of extras) {
+      if (evaluation[key] !== undefined) {
+        html += `<div class="reward-row"><span>${key.replace(/_/g,' ')}</span><span class="reward-value">${evaluation[key]}</span></div>`;
+      }
+    }
+    evalDisplay.innerHTML = html;
+  }
+
+  // Navigation
+  function goToStep(n) {
+    if (!trajectory) return;
+    const max = trajectory.steps.length - 1;
+    currentStep = Math.max(0, Math.min(max, n));
+    renderStep();
+  }
+
+  function prevStep() { goToStep(currentStep - 1); }
+  function nextStep() {
+    if (currentStep >= trajectory.steps.length - 1) {
+      stopPlaying();
+      return;
+    }
+    goToStep(currentStep + 1);
+  }
+
+  function togglePlay() {
+    if (playing) { stopPlaying(); }
+    else { startPlaying(); }
+  }
+
+  function startPlaying() {
+    if (!trajectory) return;
+    playing = true;
+    btnPlay.textContent = '\u23f8 Pause';
+    btnPlay.classList.add('active');
+    const speed = parseInt(speedSelect.value, 10);
+    playTimer = setInterval(() => {
+      if (currentStep >= trajectory.steps.length - 1) { stopPlaying(); return; }
+      nextStep();
+    }, speed);
+  }
+
+  function stopPlaying() {
+    playing = false;
+    btnPlay.textContent = '\u25b6 Play';
+    btnPlay.classList.remove('active');
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  }
+
+  // Progress bar click
+  progressBar.addEventListener('click', (e) => {
+    if (!trajectory) return;
+    const rect = progressBar.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    const idx = Math.round(pct * (trajectory.steps.length - 1));
+    goToStep(idx);
+  });
+
+  // Buttons
+  btnPrev.addEventListener('click', prevStep);
+  btnNext.addEventListener('click', nextStep);
+  btnPlay.addEventListener('click', togglePlay);
+  speedSelect.addEventListener('change', () => {
+    if (playing) { stopPlaying(); startPlaying(); }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'SELECT') return;
+    switch (e.key) {
+      case 'ArrowLeft': e.preventDefault(); prevStep(); break;
+      case 'ArrowRight': e.preventDefault(); nextStep(); break;
+      case ' ': e.preventDefault(); togglePlay(); break;
+      case 'Home': e.preventDefault(); goToStep(0); break;
+      case 'End': e.preventDefault(); goToStep(trajectory ? trajectory.steps.length - 1 : 0); break;
+    }
+  });
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  // Init
+  async function init() {
+    await loadTrajectoryList();
+
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session');
+    if (sessionId) {
+      await loadTrajectory(sessionId);
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

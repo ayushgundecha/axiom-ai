@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>axiom-ai</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #050508;
+    --bg-card: #0a0a0f;
+    --bg-surface: #0f0f16;
+    --bg-hover: #14141e;
+    --border: #1a1a2e;
+    --border-bright: #2a2a44;
+    --text: #ebebf5;
+    --text-secondary: #9898b0;
+    --text-dim: #5a5a72;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --accent-glow: rgba(99,102,241,0.25);
+    --accent-glow-strong: rgba(99,102,241,0.5);
+    --green: #10b981;
+    --green-glow: rgba(16,185,129,0.2);
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --cyan: #06b6d4;
+    --purple: #a78bfa;
+    --pink: #ec4899;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* === ANIMATIONS === */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  @keyframes slideRight { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes pulseGlow {
+    0%,100% { box-shadow: 0 0 12px var(--accent-glow); }
+    50% { box-shadow: 0 0 24px var(--accent-glow-strong); }
+  }
+  @keyframes dotPulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+  @keyframes growWidth { from { width:0; } }
+  @keyframes countUp { from { opacity:0; transform:scale(0.8); } to { opacity:1; transform:scale(1); } }
+  @keyframes borderGlow {
+    0%,100% { border-color: var(--border); }
+    50% { border-color: var(--accent); }
+  }
+  @keyframes gridMove {
+    0% { background-position: 0 0; }
+    100% { background-position: 40px 40px; }
+  }
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    25% { transform: translate(30px,-20px) scale(1.1); }
+    50% { transform: translate(-10px,30px) scale(0.95); }
+    75% { transform: translate(-30px,-10px) scale(1.05); }
+  }
+  @keyframes ringPulse {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 0.1; }
+    100% { transform: scale(0.8); opacity: 0.6; }
+  }
+
+  /* === TOP BAR === */
+  .topbar {
+    height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: var(--accent-light);
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; }
+  .server-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+    background: var(--bg-surface); padding: 3px 10px;
+    border-radius: 100px; border: 1px solid var(--border);
+  }
+  .server-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+    animation: dotPulse 2s infinite;
+  }
+  .server-dot.off { background: var(--red); box-shadow: none; animation: none; }
+  .topbar-right {
+    display: flex; align-items: center; gap: 16px;
+    font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  }
+  .topbar-stat .val { color: var(--text-secondary); font-weight: 600; }
+
+  /* === MAIN LAYOUT === */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* === LEFT SIDEBAR === */
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-dim); margin-bottom: 12px;
+  }
+
+  /* Environment buttons */
+  .env-btn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 10px 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer;
+    font-family: var(--sans); font-size: 13px;
+    color: var(--text); margin-bottom: 6px;
+    transition: all 0.2s;
+  }
+  .env-btn:hover { border-color: var(--border-bright); background: var(--bg-hover); }
+  .env-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.08); animation: pulseGlow 3s infinite; }
+  .env-btn.done { border-color: var(--green); background: rgba(16,185,129,0.06); box-shadow: none; animation: none; }
+  .env-btn[data-env="webapp"] .env-icon { background: rgba(6,182,212,0.1); color: var(--cyan); border: 1px solid rgba(6,182,212,0.2); }
+  .env-btn[data-env="cli"] .env-icon { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .env-btn[data-env="json"] .env-icon { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+  .env-btn[data-env="webapp"].active { border-color: var(--cyan); box-shadow: 0 0 16px rgba(6,182,212,0.2); }
+  .env-btn[data-env="cli"].active { border-color: var(--green); box-shadow: 0 0 16px rgba(16,185,129,0.2); }
+  .env-btn[data-env="json"].active { border-color: var(--purple); box-shadow: 0 0 16px rgba(167,139,250,0.2); }
+  .env-btn .env-icon {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border-radius: 6px;
+    font-size: 14px;
+  }
+  .env-btn .env-info { text-align: left; }
+  .env-btn .env-name { font-weight: 600; font-size: 13px; }
+  .env-btn .env-tech { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+  .env-btn .env-status {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-dim);
+  }
+  .env-btn.active .env-status { color: var(--accent-light); animation: dotPulse 1.5s infinite; }
+  .env-btn.done .env-status { color: var(--green); }
+
+  /* Tasks list */
+  .task-btn {
+    display: block; width: 100%;
+    padding: 8px 10px;
+    background: none; border: 1px solid transparent;
+    border-radius: 6px; cursor: pointer;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-secondary); text-align: left;
+    transition: all 0.15s; margin-bottom: 2px;
+  }
+  .task-btn:hover { background: var(--bg-hover); border-color: var(--border); }
+  .task-btn.active { background: var(--bg-hover); border-color: var(--accent); color: var(--accent-light); }
+
+  /* Eval in sidebar */
+  .eval-metric {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .eval-metric .name {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim); width: 72px; flex-shrink: 0;
+  }
+  .eval-metric .bar-track {
+    flex: 1; height: 4px;
+    background: var(--border); border-radius: 2px;
+    overflow: hidden;
+  }
+  .eval-metric .bar-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+  }
+  .eval-metric .bar-fill.green { background: var(--green); }
+  .eval-metric .bar-fill.amber { background: var(--amber); }
+  .eval-metric .bar-fill.red { background: var(--red); }
+  .eval-metric .score {
+    font-family: var(--mono); font-size: 12px;
+    font-weight: 700; width: 36px; text-align: right;
+  }
+  .eval-metric .score.green { color: var(--green); }
+  .eval-metric .score.amber { color: var(--amber); }
+  .eval-metric .score.red { color: var(--red); }
+
+  /* === CENTER: OBSERVATION === */
+  .center {
+    flex: 1; display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .center-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; height: 40px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 12px;
+  }
+  .center-header .info { display: flex; gap: 16px; color: var(--text-dim); }
+  .center-header .info .val { color: var(--text-secondary); font-weight: 600; }
+  .center-header .step-badge {
+    padding: 2px 10px; border-radius: 100px;
+    background: var(--bg-surface); border: 1px solid var(--border);
+    color: var(--accent-light); font-weight: 600;
+  }
+  .obs-progress {
+    height: 2px; background: var(--border); flex-shrink: 0;
+  }
+  .obs-progress-fill {
+    height: 100%; background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    transition: width 0.4s ease;
+  }
+  .obs-area {
+    flex: 1; display: flex;
+    align-items: center; justify-content: center;
+    padding: 24px; overflow: auto;
+    background: var(--bg);
+    position: relative;
+  }
+  .obs-area::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    animation: gridMove 8s linear infinite;
+    pointer-events: none;
+  }
+  .obs-area::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, var(--bg) 80%);
+    pointer-events: none;
+  }
+  .obs-area > * { position: relative; z-index: 1; }
+  .obs-area img {
+    max-width: 100%; max-height: 100%;
+    border-radius: 8px; border: 1px solid var(--border);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  .obs-area pre {
+    font-family: var(--mono); font-size: 13px;
+    line-height: 1.7; color: var(--text);
+    white-space: pre-wrap; word-break: break-word;
+    width: 100%; max-width: 700px;
+    padding: 20px; border-radius: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+  }
+  .obs-empty {
+    text-align: center; color: var(--text-dim);
+    font-size: 14px; line-height: 2;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 20px;
+  }
+  .obs-empty .orb-container {
+    position: relative; width: 120px; height: 120px;
+  }
+  .obs-empty .orb {
+    position: absolute; border-radius: 50%;
+  }
+  .obs-empty .orb-1 {
+    inset: 20px; background: radial-gradient(circle, var(--accent-glow-strong), transparent);
+    animation: orbFloat 6s ease-in-out infinite;
+  }
+  .obs-empty .orb-2 {
+    inset: 0; border: 1px solid var(--accent-glow);
+    animation: ringPulse 3s ease-in-out infinite;
+  }
+  .obs-empty .orb-3 {
+    inset: -15px; border: 1px solid rgba(99,102,241,0.08);
+    animation: ringPulse 3s ease-in-out 1s infinite;
+  }
+  .obs-empty .orb-center {
+    position: absolute; inset: 35px;
+    background: var(--accent);
+    border-radius: 50%;
+    opacity: 0.6;
+    filter: blur(8px);
+    animation: dotPulse 3s ease-in-out infinite;
+  }
+  .obs-empty h2 {
+    font-size: 16px; color: var(--text-secondary);
+    font-weight: 600; letter-spacing: -0.3px;
+  }
+  .obs-empty p { font-size: 13px; max-width: 300px; }
+
+  /* === RIGHT: ACTION LOG === */
+  .action-panel {
+    width: 320px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    border-left: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .action-panel-header {
+    padding: 10px 16px; height: 40px;
+    display: flex; align-items: center;
+    font-family: var(--mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .action-log {
+    flex: 1; overflow-y: auto; padding: 8px 0;
+  }
+  .log-item {
+    padding: 8px 16px;
+    animation: slideRight 0.3s ease both;
+    border-left: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .log-item.current { border-left-color: var(--accent); background: rgba(99,102,241,0.04); }
+  .log-item .log-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 3px;
+  }
+  .log-item .step-num {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--text-dim); font-weight: 600;
+  }
+  .log-item .reward-badge {
+    font-family: var(--mono); font-size: 10px;
+    padding: 1px 6px; border-radius: 4px;
+    font-weight: 600;
+  }
+  .log-item .reward-badge.pos { background: rgba(16,185,129,0.1); color: var(--green); }
+  .log-item .reward-badge.neg { background: rgba(239,68,68,0.1); color: var(--red); }
+  .log-item .reward-badge.zero { background: var(--bg-surface); color: var(--text-dim); }
+  .log-item .action-text {
+    font-family: var(--mono); font-size: 12px; line-height: 1.5;
+  }
+  .log-item .action-text .type { color: var(--accent-light); font-weight: 600; }
+  .log-item .action-text .target { color: var(--purple); }
+  .log-item .action-text .value { color: var(--green); }
+
+  /* Done banner */
+  .done-banner {
+    padding: 12px 16px; margin: 8px 12px;
+    border-radius: 8px; text-align: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    animation: fadeUp 0.4s ease both;
+  }
+  .done-banner.success { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .done-banner.timeout { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+
+  /* === BOTTOM BAR === */
+  .bottombar {
+    height: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--text-dim);
+  }
+  .bottombar kbd {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 3px; padding: 0 4px;
+    font-family: var(--mono); font-size: 10px;
+  }
+  .bottombar .controls { display: flex; gap: 12px; }
+
+  /* Utility */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">axiom-ai <span>mission control</span></div>
+    <div class="server-badge">
+      <div class="server-dot" id="srv-dot"></div>
+      <span id="srv-text">connecting...</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-stat">tests <span class="val">100</span></div>
+    <div class="topbar-stat">typed <span class="val">31</span></div>
+    <div class="topbar-stat">strict <span class="val">mypy</span></div>
+    <div class="topbar-stat">envs <span class="val">3</span></div>
+    <div class="topbar-stat">tasks <span class="val">7</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Environments</div>
+      <button class="env-btn" id="env-webapp" data-env="webapp" onclick="pickEnv('webapp')">
+        <div class="env-icon">&#127760;</div>
+        <div class="env-info">
+          <div class="env-name">WebApp</div>
+          <div class="env-tech">Playwright + Chromium</div>
+        </div>
+        <div class="env-status" id="env-webapp-status">idle</div>
+      </button>
+      <button class="env-btn" id="env-cli" data-env="cli" onclick="pickEnv('cli')">
+        <div class="env-icon">&#9000;</div>
+        <div class="env-info">
+          <div class="env-name">CLI</div>
+          <div class="env-tech">Sandboxed Shell</div>
+        </div>
+        <div class="env-status" id="env-cli-status">idle</div>
+      </button>
+      <button class="env-btn" id="env-json" data-env="json" onclick="pickEnv('json')">
+        <div class="env-icon">{ }</div>
+        <div class="env-info">
+          <div class="env-name">JSON</div>
+          <div class="env-tech">State Machine</div>
+        </div>
+        <div class="env-status" id="env-json-status">idle</div>
+      </button>
+    </div>
+
+    <div class="sidebar-section" id="tasks-section">
+      <div class="sidebar-label">Tasks</div>
+      <div id="tasks-list">
+        <div style="font-size:11px;color:var(--text-dim)">Select an environment</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section" id="eval-section" style="display:none">
+      <div class="sidebar-label">Evaluation</div>
+      <div id="eval-container"></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="center-header">
+      <div class="info">
+        <div>agent <span class="val" id="c-agent">-</span></div>
+        <div>task <span class="val" id="c-task">-</span></div>
+        <div>env <span class="val" id="c-env">-</span></div>
+      </div>
+      <div class="step-badge" id="c-step">step 0/0</div>
+    </div>
+    <div class="obs-progress"><div class="obs-progress-fill" id="obs-progress" style="width:0%"></div></div>
+    <div class="obs-area" id="obs-area">
+      <div class="obs-empty">
+        <div class="orb-container">
+          <div class="orb orb-3"></div>
+          <div class="orb orb-2"></div>
+          <div class="orb orb-1"></div>
+          <div class="orb orb-center"></div>
+        </div>
+        <h2>Ready to Launch</h2>
+        <p>Select an environment and task to watch an AI agent operate in a real digital environment</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ACTION LOG -->
+  <div class="action-panel">
+    <div class="action-panel-header">agent log</div>
+    <div class="action-log" id="action-log"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottombar">
+  <div class="controls">
+    <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> navigate</span>
+    <span><kbd>Space</kbd> play/pause</span>
+    <span><kbd>R</kbd> restart</span>
+  </div>
+  <div>axiom-ai &mdash; training gym for AI agents</div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const API = '';
+  let trajectory = null;
+  let sessionId = null;
+  let envName = null;
+  let stepIndex = -1;
+  let playing = false;
+  let playTimer = null;
+  let allTrajectories = [];
+  let taskMap = {};
+
+  // DOM
+  const obsArea = document.getElementById('obs-area');
+  const obsProgress = document.getElementById('obs-progress');
+  const actionLog = document.getElementById('action-log');
+  const cStep = document.getElementById('c-step');
+  const cAgent = document.getElementById('c-agent');
+  const cTask = document.getElementById('c-task');
+  const cEnv = document.getElementById('c-env');
+  const evalSection = document.getElementById('eval-section');
+  const evalContainer = document.getElementById('eval-container');
+  const tasksList = document.getElementById('tasks-list');
+
+  // Server check
+  async function checkServer() {
+    try {
+      const r = await fetch(API + '/health');
+      const d = await r.json();
+      document.getElementById('srv-dot').className = 'server-dot';
+      document.getElementById('srv-text').textContent = 'online';
+    } catch {
+      document.getElementById('srv-dot').className = 'server-dot off';
+      document.getElementById('srv-text').textContent = 'offline';
+    }
+  }
+
+  // Load trajectories
+  async function loadTrajectories() {
+    try {
+      const r = await fetch(API + '/trajectories/saved');
+      allTrajectories = await r.json();
+      // Group by env
+      taskMap = {};
+      for (const t of allTrajectories) {
+        if (!taskMap[t.env_type]) taskMap[t.env_type] = [];
+        taskMap[t.env_type].push(t);
+      }
+    } catch {}
+  }
+
+  // Pick environment
+  window.pickEnv = function(env) {
+    envName = env;
+    document.querySelectorAll('.env-btn').forEach(b => b.classList.remove('active','done'));
+    document.getElementById('env-' + env).classList.add('active');
+    document.getElementById('env-' + env + '-status').textContent = 'selected';
+
+    // Show tasks for this env
+    const envTrajs = taskMap[env] || [];
+    if (envTrajs.length === 0) {
+      tasksList.innerHTML = '<div style="font-size:11px;color:var(--text-dim);line-height:1.6">No saved trajectories.<br>Run an agent first:<br><code style="color:var(--accent-light)">python scripts/run_demo.py --env ' + env + ' --task &lt;id&gt;</code></div>';
+      return;
+    }
+
+    // Deduplicate by task name, keep latest
+    const byTask = {};
+    for (const t of envTrajs) byTask[t.task_name] = t;
+
+    tasksList.innerHTML = Object.values(byTask).map(t =>
+      `<button class="task-btn" onclick="loadTask('${t.session_id}','${t.task_name}')">${t.task_name} <span style="color:var(--text-dim)">(${t.total_steps} steps)</span></button>`
+    ).join('');
+  };
+
+  // Load and replay a task trajectory
+  window.loadTask = async function(sid, taskName) {
+    sessionId = sid;
+    stopPlay();
+    stepIndex = -1;
+
+    document.querySelectorAll('.task-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+
+    try {
+      const r = await fetch(API + '/trajectories/' + sid + '/trajectory.json');
+      trajectory = await r.json();
+    } catch(e) {
+      obsArea.innerHTML = '<div class="obs-empty">Failed to load trajectory</div>';
+      return;
+    }
+
+    // Reset UI
+    actionLog.innerHTML = '';
+    evalSection.style.display = 'none';
+    cAgent.textContent = 'agent';
+    cTask.textContent = trajectory.task_name || taskName;
+    cEnv.textContent = trajectory.env_type || envName;
+    cStep.textContent = 'step 0/' + trajectory.steps.length;
+    obsProgress.style.width = '0%';
+
+    // Auto-play the trajectory
+    startReplay();
+  };
+
+  async function startReplay() {
+    if (!trajectory || !trajectory.steps.length) return;
+
+    const total = trajectory.steps.length;
+    const envBtn = document.getElementById('env-' + (trajectory.env_type || envName));
+    if (envBtn) {
+      envBtn.classList.remove('done');
+      envBtn.classList.add('active');
+      const statusEl = envBtn.querySelector('.env-status');
+      if (statusEl) statusEl.textContent = 'running';
+    }
+
+    for (let i = 0; i < total; i++) {
+      stepIndex = i;
+      const step = trajectory.steps[i];
+      const pct = ((i + 1) / total * 100).toFixed(0);
+
+      // Update progress
+      obsProgress.style.width = pct + '%';
+      cStep.textContent = 'step ' + (i + 1) + '/' + total;
+
+      // Update observation
+      showObservation(step);
+
+      // Add log entry
+      addLogEntry(step, i, i === total - 1);
+
+      // Wait
+      await sleep(700);
+    }
+
+    // Done
+    const last = trajectory.steps[total - 1];
+    const banner = document.createElement('div');
+    banner.className = 'done-banner ' + (last.terminated ? 'success' : 'timeout');
+    banner.textContent = last.terminated ? '✓ TASK COMPLETE' : '⏱ MAX STEPS REACHED';
+    actionLog.appendChild(banner);
+    actionLog.scrollTop = actionLog.scrollHeight;
+
+    if (envBtn) {
+      envBtn.classList.remove('active');
+      envBtn.classList.add('done');
+      const statusEl = envBtn.querySelector('.env-status');
+      if (statusEl) statusEl.textContent = 'done ✓';
+    }
+
+    // Show evaluation
+    if (trajectory.evaluation) {
+      await sleep(500);
+      showEvaluation(trajectory.evaluation);
+    }
+  }
+
+  function showObservation(step) {
+    const obs = step.observation || {};
+    const type = trajectory.env_type || envName;
+
+    if (type === 'webapp' && sessionId) {
+      const imgUrl = API + '/trajectories/' + sessionId + '/screenshots/step_' + step.step_num + '.png';
+      const img = new Image();
+      img.onload = () => { obsArea.innerHTML = ''; obsArea.appendChild(img); };
+      img.onerror = () => showTextObs(obs);
+      img.src = imgUrl;
+      img.style.cssText = 'max-width:100%;max-height:100%;border-radius:8px;border:1px solid var(--border);box-shadow:0 4px 24px rgba(0,0,0,0.5)';
+    } else {
+      showTextObs(obs);
+    }
+  }
+
+  function showTextObs(obs) {
+    let text = '';
+    if (obs.text_output) text = obs.text_output;
+    else if (obs.state) text = JSON.stringify(obs.state, null, 2);
+    else if (obs.dom_tree) text = obs.dom_tree;
+    else text = JSON.stringify(obs, null, 2);
+    obsArea.innerHTML = '<pre>' + esc(text) + '</pre>';
+  }
+
+  function addLogEntry(step, idx, isLast) {
+    const action = step.action || {};
+    const r = step.reward || 0;
+    const rCls = r > 0 ? 'pos' : r < 0 ? 'neg' : 'zero';
+    const rSign = r >= 0 ? '+' : '';
+
+    // Remove current highlight from previous
+    actionLog.querySelectorAll('.log-item.current').forEach(el => el.classList.remove('current'));
+
+    const el = document.createElement('div');
+    el.className = 'log-item current';
+    el.innerHTML = `
+      <div class="log-header">
+        <span class="step-num">STEP ${String(idx+1).padStart(2,'0')}</span>
+        <span class="reward-badge ${rCls}">${rSign}${r.toFixed(2)}</span>
+      </div>
+      <div class="action-text">
+        <span class="type">${esc(action.type || '?')}</span>${action.selector ? ' <span class="target">' + esc(action.selector) + '</span>' : ''}${action.value ? ' <span class="value">"' + esc(String(action.value).slice(0,50)) + '"</span>' : ''}${action.params ? ' <span style="color:var(--text-dim)">' + esc(JSON.stringify(action.params).slice(0,60)) + '</span>' : ''}
+      </div>`;
+    actionLog.appendChild(el);
+    actionLog.scrollTop = actionLog.scrollHeight;
+  }
+
+  function showEvaluation(scores) {
+    evalSection.style.display = '';
+    const metrics = [
+      { key: 'completion', label: 'compl' },
+      { key: 'efficiency', label: 'effic' },
+      { key: 'accuracy', label: 'accur' },
+      { key: 'safety', label: 'safety' },
+    ];
+
+    evalContainer.innerHTML = metrics.map(m => {
+      const val = scores[m.key];
+      if (val === undefined) return '';
+      const cls = val >= 0.8 ? 'green' : val >= 0.5 ? 'amber' : 'red';
+      const pct = (val * 100).toFixed(0);
+      return `
+        <div class="eval-metric">
+          <span class="name">${m.label}</span>
+          <div class="bar-track"><div class="bar-fill ${cls}" style="width:0%"></div></div>
+          <span class="score ${cls}">${val.toFixed(2)}</span>
+        </div>`;
+    }).join('');
+
+    // Animate bars
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        evalContainer.querySelectorAll('.bar-fill').forEach((bar, i) => {
+          const val = scores[metrics[i].key];
+          bar.style.width = (val * 100).toFixed(0) + '%';
+        });
+      });
+    });
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (!trajectory) return;
+    const total = trajectory.steps.length;
+    switch(e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        if (stepIndex < total - 1) {
+          stepIndex++;
+          showObservation(trajectory.steps[stepIndex]);
+          cStep.textContent = 'step ' + (stepIndex+1) + '/' + total;
+          obsProgress.style.width = ((stepIndex+1)/total*100) + '%';
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (stepIndex > 0) {
+          stepIndex--;
+          showObservation(trajectory.steps[stepIndex]);
+          cStep.textContent = 'step ' + (stepIndex+1) + '/' + total;
+          obsProgress.style.width = ((stepIndex+1)/total*100) + '%';
+        }
+        break;
+      case 'r':
+      case 'R':
+        if (trajectory) {
+          actionLog.innerHTML = '';
+          evalSection.style.display = 'none';
+          stepIndex = -1;
+          startReplay();
+        }
+        break;
+    }
+  });
+
+  function stopPlay() {
+    playing = false;
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+  // Init
+  async function init() {
+    await checkServer();
+    await loadTrajectories();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

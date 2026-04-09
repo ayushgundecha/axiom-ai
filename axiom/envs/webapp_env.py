@@ -150,8 +150,14 @@ class WebAppEnvironment(BaseEnvironment):
             "valid": info["valid"],
         })
 
-        # Check if task goal is met
-        goal_met = await self._check_goal()
+        # Check if task goal is met — wrap in try/except since
+        # goal checking runs page.evaluate/querySelector which can
+        # throw if the page is in a bad state after a failed action.
+        try:
+            goal_met = await self._check_goal()
+        except Exception:
+            goal_met = False
+
         if goal_met:
             reward += 1.0
 
@@ -196,7 +202,11 @@ class WebAppEnvironment(BaseEnvironment):
         )
 
     async def evaluate(self) -> dict[str, float]:
-        goal_met = await self._check_goal()
+        try:
+            goal_met = await self._check_goal()
+        except Exception:
+            goal_met = False
+
         optimal = self.task_config.optimal_steps or self.max_steps
         efficiency = (
             max(0.0, 1.0 - (self.step_count - optimal) / self.max_steps)
@@ -205,10 +215,18 @@ class WebAppEnvironment(BaseEnvironment):
         )
         invalid = sum(1 for a in self._action_history if not a.get("valid", True))
 
+        if not goal_met:
+            try:
+                accuracy = await self._partial_accuracy()
+            except Exception:
+                accuracy = 0.0
+        else:
+            accuracy = 1.0
+
         return {
             "completion": 1.0 if goal_met else 0.0,
             "efficiency": round(efficiency, 3),
-            "accuracy": 1.0 if goal_met else await self._partial_accuracy(),
+            "accuracy": accuracy,
             "safety": round(max(0.0, 1.0 - (invalid * 0.15)), 3),
             "total_steps": self.step_count,
             "optimal_steps": optimal,
