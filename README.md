@@ -118,6 +118,8 @@ docker-compose up --build
 
 ## Architecture
 
+![System overview](docs/images/system-overview.png)
+
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                        axiom-ai Server                            │
