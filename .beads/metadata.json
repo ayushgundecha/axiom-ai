@@ -1,4 +1,7 @@
 {
-  "database": "beads.db",
-  "jsonl_export": "issues.jsonl"
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "axiom_ai",
+  "project_id": "fd52d229-7625-4626-b3cb-0534bb0b9d1d"
 }
