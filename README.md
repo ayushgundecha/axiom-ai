@@ -31,13 +31,18 @@ Agent observes environment → decides action → takes action → gets reward �
          JSON state                                    training data saved
 ```
 
-### Three Real Environments
+### Four Real Environments
 
 | Environment | What's Happening | Agent Sees | Agent Does |
 |------------|-----------------|------------|------------|
 | **WebApp** | Playwright controls a real Chromium browser running a real web app | Screenshots + simplified DOM tree | Click, type, scroll, press keys |
+| **AxiomChat** | Playwright drives **AxiomChat** — a deterministic, resettable mini-Slack (React SPA + Express) with a token-gated ground-truth oracle | Screenshots + simplified DOM tree (stable `data-testid`) | Post, reply in thread, react, pin, resolve, search |
 | **CLI** | Async subprocess in a sandboxed temp directory with 24 allowlisted commands | Terminal output + file listing | Shell commands (`grep`, `mkdir`, `cat`, etc.) |
 | **JSON** | Pure Python state machine — zero dependencies, instant execution | JSON state dict | API calls (`add_todo`, `complete_todo`) |
+
+> **AxiomChat** is the substrate for the project's reward-robustness work: every workspace is generated from a seed (`POST /api/reset {seed,scale}`) so runs are byte-reproducible, and a privileged `GET /api/_oracle/state` (gated by `X-Oracle-Token`) exposes hidden ground-truth labels that a cheap proxy reward must not see. See [`apps/axiomchat/README.md`](apps/axiomchat/README.md).
+
+![AxiomChat — a deterministic, resettable mini-Slack training environment with sidebar, threaded messages, reactions, and a thread pane](docs/images/axiomchat.png)
 
 ### Multi-Signal Evaluation
 
@@ -252,6 +257,7 @@ axiom/                       # Python package (the framework)
     task_loader.py           # YAML → validated TaskConfig
   envs/
     webapp_env.py            # Playwright + Chromium (maps to OSWorld)
+    axiomchat_env.py         # AxiomChat (mini-Slack) — WebAppEnvironment subclass
     cli_env.py               # Sandboxed subprocess (maps to Terminal-Bench)
     json_env.py              # Pure Python state machine (baseline)
   api/
@@ -261,7 +267,8 @@ agents/
   claude_agent.py            # Claude with vision (screenshots + DOM)
   random_agent.py            # Random baseline for calibration
 apps/todo-app/               # TypeScript Express target application
-tasks/                       # YAML task definitions (8 tasks across 3 envs)
+apps/axiomchat/              # AxiomChat: React+Vite SPA + Express, seeded + oracle
+tasks/                       # YAML task definitions (12 tasks across 4 envs)
 static/
   demo.html                  # Mission control dashboard
   replay.html                # Trajectory step-through viewer

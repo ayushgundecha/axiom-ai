@@ -1,0 +1,32 @@
+name: "react_to_message"
+env: "axiomchat"
+description: |
+  You are using AxiomChat, a Slack-like team chat app, in a web browser.
+  Your task: add a 👍 reaction to a specific message in the #general channel.
+
+  Find the message that reads exactly:
+  "Coffee machine on the 4th floor is fixed."
+  and add a thumbs-up (👍) reaction to it.
+
+  How: click "#general" in the sidebar, move the pointer over that message to
+  reveal its hover action toolbar, then click the reaction (smiley) button to
+  add a 👍 reaction.
+
+app_url: "http://localhost:3100"
+observation_mode: "hybrid"
+seed: 42
+scale: "medium"
+
+goal:
+  type: "custom_js"
+  script: |
+    (() => {
+      const t = [...document.querySelectorAll('[data-testid^="message-text-"]')]
+        .find((e) => e.innerText.includes("Coffee machine on the 4th floor is fixed"));
+      if (!t) return false;
+      const id = t.getAttribute("data-testid").replace("message-text-", "");
+      return !!document.querySelector('[data-testid="reaction-' + id + '-\u{1F44D}"]');
+    })()
+
+max_steps: 12
+optimal_steps: 3

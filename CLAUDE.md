@@ -33,6 +33,7 @@ axiom/                  # Python package (the framework)
   envs/                 # Concrete environment implementations
     json_env.py         # JSONEnvironment (simple state machine, baseline)
     webapp_env.py       # WebAppEnvironment (Playwright, screenshots, DOM) -- maps to OSWorld
+    axiomchat_env.py    # AxiomChatEnvironment(WebAppEnvironment) -- the deterministic mini-Slack (4th env)
     cli_env.py          # CLIEnvironment (subprocess, sandboxed) -- maps to Terminal-Bench
   api/                  # FastAPI REST API
     app.py              # Application factory + lifespan
@@ -46,7 +47,8 @@ agents/                 # AI agents (interact via HTTP API)
   claude_agent.py       # Claude with vision (screenshots + DOM)
   random_agent.py       # Random baseline
 apps/todo-app/          # TypeScript Express todo app (Docker container)
-tasks/                  # YAML task definitions (json/, webapp/, cli/)
+apps/axiomchat/         # AxiomChat: React+Vite+TS+Tailwind SPA + Express (seeded, oracle-gated)
+tasks/                  # YAML task definitions (json/, webapp/, axiomchat/, cli/)
 trajectories/           # Saved trajectories + screenshots
 ```
 

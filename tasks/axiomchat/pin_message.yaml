@@ -1,0 +1,32 @@
+name: "pin_message"
+env: "axiomchat"
+description: |
+  You are using AxiomChat, a Slack-like team chat app, in a web browser.
+  Your task: pin an important message in the #general channel.
+
+  Find the message that reads exactly:
+  "Office is closed Monday for the holiday."
+  and pin it.
+
+  How: click "#general" in the sidebar, hover the message to reveal its action
+  toolbar, then click the pin button. A "Pinned" label appears on the message.
+
+app_url: "http://localhost:3100"
+observation_mode: "hybrid"
+seed: 42
+scale: "medium"
+
+goal:
+  type: "custom_js"
+  script: |
+    (() => {
+      const t = [...document.querySelectorAll('[data-testid^="message-text-"]')]
+        .find((e) => e.innerText.includes("Office is closed Monday for the holiday"));
+      if (!t) return false;
+      const id = t.getAttribute("data-testid").replace("message-text-", "");
+      const row = document.querySelector('[data-testid="message-' + id + '"]');
+      return !!row && row.innerText.includes("Pinned");
+    })()
+
+max_steps: 12
+optimal_steps: 3

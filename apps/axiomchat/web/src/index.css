@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-base text-ink font-sans antialiased;
+    font-size: 15px;
+  }
+  /* Refined, low-contrast scrollbars that match the dark surfaces. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2a3140 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: #2a3140;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #3a4252;
+  }
+  /* Consistent keyboard focus ring across interactive elements. */
+  :focus-visible {
+    outline: none;
+    @apply ring-2 ring-accent/60;
+  }
+}
+
+@layer components {
+  /* Hover action toolbar pops on message-row hover. */
+  .row-actions {
+    @apply opacity-0 transition;
+  }
+  .group:hover .row-actions {
+    @apply opacity-100;
+  }
+}
+
+@layer utilities {
+  /* Disable transitions/animations when the app runs in screenshot mode
+     (?screenshot=1 or [data-screenshot]) so Playwright captures are byte-stable. */
+  [data-screenshot] * {
+    transition: none !important;
+    animation: none !important;
+    caret-color: transparent !important;
+  }
+}
