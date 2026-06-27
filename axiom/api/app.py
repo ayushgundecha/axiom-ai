@@ -30,6 +30,7 @@ from axiom.logging import configure_logging, get_logger
 
 def _create_registry() -> EnvironmentRegistry:
     """Create and populate the environment registry."""
+    from axiom.envs.axiomchat_env import AxiomChatEnvironment
     from axiom.envs.cli_env import CLIEnvironment
     from axiom.envs.json_env import JSONEnvironment
     from axiom.envs.webapp_env import WebAppEnvironment
@@ -38,6 +39,7 @@ def _create_registry() -> EnvironmentRegistry:
     registry.register("json", JSONEnvironment)
     registry.register("webapp", WebAppEnvironment)
     registry.register("cli", CLIEnvironment)
+    registry.register("axiomchat", AxiomChatEnvironment)
     return registry
 
 

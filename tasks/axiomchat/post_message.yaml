@@ -1,0 +1,24 @@
+name: "post_message"
+env: "axiomchat"
+description: |
+  You are using AxiomChat, a Slack-like team chat app, in a web browser.
+  Your task: post a new message in the #general channel announcing a deploy.
+  The message MUST contain the exact phrase: "Deploying v4.3 to production".
+
+  How: click the "#general" channel in the left sidebar, click the message
+  composer at the bottom (placeholder "Message #general"), type the message,
+  then press Enter (or click the Send button).
+
+app_url: "http://localhost:3100"
+observation_mode: "hybrid"
+seed: 42
+scale: "medium"
+
+goal:
+  type: "custom_js"
+  script: |
+    (() => [...document.querySelectorAll('[data-testid^="message-text-"]')]
+      .some((el) => el.innerText.includes("Deploying v4.3 to production")))()
+
+max_steps: 12
+optimal_steps: 3

@@ -37,6 +37,11 @@ class AxiomSettings(BaseSettings):
     # Todo app (target application for WebApp environment)
     todo_app_url: str = "http://localhost:3000"
 
+    # AxiomChat (the deterministic mini-Slack environment, 4th env).
+    # Override via AXIOM_AXIOMCHAT_APP_URL / AXIOM_AXIOMCHAT_ORACLE_TOKEN.
+    axiomchat_app_url: str = "http://localhost:3100"
+    axiomchat_oracle_token: str = "axiom-oracle-dev-token"
+
     # Logging
     log_level: str = "info"
     log_format: str = "console"  # "console" (dev) or "json" (production)
