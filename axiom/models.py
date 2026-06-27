@@ -190,6 +190,11 @@ class TaskConfig(BaseModel):
     optimal_steps: int | None = None
     observation_mode: str = "hybrid"
     app_url: str | None = None
+    # Deterministic-environment controls (used by AxiomChat). Optional and
+    # additive — existing tasks omit them. `seed` selects the workspace
+    # snapshot; `scale` selects its size preset (small | medium | large).
+    seed: int | None = None
+    scale: str | None = None
     goal: dict[str, Any]
     setup_actions: list[dict[str, Any]] = Field(default_factory=list)
     initial_state: dict[str, Any] = Field(default_factory=dict)

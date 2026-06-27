@@ -64,6 +64,29 @@ def sample_webapp_task_config() -> dict[str, Any]:
 
 
 @pytest.fixture
+def sample_axiomchat_task_config() -> dict[str, Any]:
+    """Minimal AxiomChat (mini-Slack) environment task config for testing."""
+    return {
+        "name": "test_post_message",
+        "env": "axiomchat",
+        "description": "Post a message in #general.",
+        "app_url": os.getenv("AXIOMCHAT_APP_URL", "http://localhost:3100"),
+        "observation_mode": "hybrid",
+        "seed": 42,
+        "scale": "medium",
+        "max_steps": 12,
+        "optimal_steps": 3,
+        "goal": {
+            "type": "custom_js",
+            "script": (
+                '(() => [...document.querySelectorAll(\'[data-testid^="message-text-"]\')]'
+                '.some((el) => el.innerText.includes("Deploying v4.3 to production")))()'
+            ),
+        },
+    }
+
+
+@pytest.fixture
 def sample_cli_task_config() -> dict[str, Any]:
     """Minimal CLI environment task config for testing."""
     return {
@@ -129,4 +152,23 @@ def is_todo_app_running() -> bool:
 requires_todo_app = pytest.mark.skipif(
     not is_todo_app_running(),
     reason="Todo app not running (start with: docker-compose up todo-app)",
+)
+
+
+def is_axiomchat_running() -> bool:
+    """Check if the AxiomChat web app is accessible."""
+    import httpx
+
+    url = os.getenv("AXIOMCHAT_APP_URL", "http://localhost:3100")
+    try:
+        resp = httpx.get(f"{url}/api/health", timeout=2)
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
+# Skip marker for integration tests requiring the AxiomChat app
+requires_axiomchat = pytest.mark.skipif(
+    not is_axiomchat_running(),
+    reason="AxiomChat app not running (start with: docker-compose up axiomchat-app)",
 )

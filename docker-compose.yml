@@ -10,6 +10,24 @@ services:
       retries: 3
       start_period: 5s
 
+  # AxiomChat — deterministic mini-Slack (target app for the axiomchat env)
+  axiomchat-app:
+    build: ./apps/axiomchat
+    ports:
+      - "3100:3000"
+    environment:
+      # Override the oracle token in any real deployment.
+      - AXIOMCHAT_ORACLE_TOKEN=axiom-oracle-dev-token
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://localhost:3000/api/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 5s
+      retries: 5
+      start_period: 5s
+
   # axiom-ai server (orchestrator + Playwright)
   axiom:
     build: .
@@ -18,8 +36,12 @@ services:
     depends_on:
       todo-app:
         condition: service_healthy
+      axiomchat-app:
+        condition: service_healthy
     environment:
       - AXIOM_TODO_APP_URL=http://todo-app:3000
+      - AXIOM_AXIOMCHAT_APP_URL=http://axiomchat-app:3000
+      - AXIOM_AXIOMCHAT_ORACLE_TOKEN=axiom-oracle-dev-token
       - AXIOM_LOG_LEVEL=info
       - AXIOM_LOG_FORMAT=console
     volumes:

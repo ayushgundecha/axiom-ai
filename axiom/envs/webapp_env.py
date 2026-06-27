@@ -99,18 +99,22 @@ class WebAppEnvironment(BaseEnvironment):
         )
         self._page = await self._context.new_page()
 
-        # Reset SERVER state via API (critical — blueprint misses this)
+        # Reset SERVER state via API (critical — blueprint misses this).
+        # The request body comes from _reset_server() so subclasses (e.g.
+        # AxiomChat) can pass deterministic parameters such as {seed, scale}.
+        reset_body = await self._reset_server()
         try:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.post(
                     f"{self._app_url}/api/reset",
-                    json={},
+                    json=reset_body,
                 )
         except httpx.HTTPError:
             logger.warning("webapp.reset_api_failed", app_url=self._app_url)
 
-        # Navigate to the app
+        # Navigate to the app, then wait for its readiness signal (if any).
         await self._page.goto(self._app_url, wait_until="networkidle")
+        await self._wait_for_ready()
 
         # Run setup actions if specified in task config
         for setup in self.task_config.setup_actions:
@@ -119,6 +123,26 @@ class WebAppEnvironment(BaseEnvironment):
             await self._page.wait_for_load_state("networkidle")
 
         return await self._observe()
+
+    # ------------------------------------------------------------------
+    # Reset hooks — overridable by subclasses (e.g. AxiomChatEnvironment)
+    # ------------------------------------------------------------------
+
+    async def _reset_server(self) -> dict[str, Any]:
+        """Body for the app's POST /api/reset.
+
+        The base sends an empty reset (clears server state). Subclasses override
+        to pass deterministic parameters — e.g. AxiomChat returns {seed, scale}.
+        """
+        return {}
+
+    async def _wait_for_ready(self) -> None:
+        """Block until the app is interactive after navigation.
+
+        The base relies on goto()'s ``networkidle``; subclasses can override to
+        wait on an explicit DOM readiness marker instead of a timeout.
+        """
+        return None
 
     async def _step(self, action: Action) -> StepResult:
         assert self._page is not None  # guaranteed by _ready guard
