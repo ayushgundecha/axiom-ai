@@ -1,0 +1,25 @@
+{
+  "name": "axiomchat-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AxiomChat — a deterministic, resettable mini-Slack environment for axiom-ai",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:web": "cd web && npm install && npm run build",
+    "build:all": "npm run build:web && npm run build",
+    "start": "node dist/server.js",
+    "dev": "tsc -p tsconfig.json && node dist/server.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/supertest": "^6.0.0",
+    "supertest": "^7.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

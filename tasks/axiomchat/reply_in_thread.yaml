@@ -1,0 +1,29 @@
+name: "reply_in_thread"
+env: "axiomchat"
+description: |
+  You are using AxiomChat, a Slack-like team chat app, in a web browser.
+  Your task: reply inside the active incident thread in the #incidents channel.
+
+  In #incidents there is an incident message that starts with the 🚨 siren
+  emoji and already has replies ("View thread"). Open that thread and post a
+  reply containing the exact phrase: "Acknowledged, taking the postmortem".
+
+  How: click "#incidents" in the sidebar, click the "View thread" indicator
+  (or the reply action) on the 🚨 incident message to open the thread pane on
+  the right, type your reply in the thread's reply box, then send it.
+
+app_url: "http://localhost:3100"
+observation_mode: "hybrid"
+seed: 42
+scale: "medium"
+
+goal:
+  type: "custom_js"
+  script: |
+    (() => {
+      const pane = document.querySelector('[data-testid="thread-pane"]');
+      return !!pane && pane.innerText.includes("Acknowledged, taking the postmortem");
+    })()
+
+max_steps: 16
+optimal_steps: 4
