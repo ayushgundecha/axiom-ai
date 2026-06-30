@@ -99,10 +99,15 @@ def create_app() -> FastAPI:
     app.include_router(sessions.router)
     app.include_router(trajectories.router)
 
-    # Static files: replay UI and saved trajectory data
+    # Static files: replay UI, robustness leaderboard, and saved trajectory data
     static_dir = Path("static")
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory="static"), name="static")
+
+    # Robustness reports (so static/robustness.html can fetch the leaderboard JSON).
+    reports_dir = Path("reports")
+    if reports_dir.exists():
+        app.mount("/reports", StaticFiles(directory="reports"), name="reports")
 
     trajectory_dir = settings.trajectory_dir
     if trajectory_dir.exists():
