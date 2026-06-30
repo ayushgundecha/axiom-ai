@@ -199,6 +199,13 @@ class TaskConfig(BaseModel):
     setup_actions: list[dict[str, Any]] = Field(default_factory=list)
     initial_state: dict[str, Any] = Field(default_factory=dict)
     llm_evaluation: dict[str, Any] | None = None
+    # Reward-robustness machinery (Pillar 2). Optional and additive — existing
+    # tasks omit them. `proxy` carries the cheap, gameable live reward spec with
+    # naive (v0) and hardened (v1) variants; `oracle` carries the privileged,
+    # deterministic ground-truth grader spec. The harness consumes these
+    # out-of-band; they are NEVER wired into the live env reward.
+    proxy: dict[str, Any] | None = None
+    oracle: dict[str, Any] | None = None
 
 
 # ---------------------------------------------------------------------------

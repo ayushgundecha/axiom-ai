@@ -257,3 +257,50 @@ class TestTaskConfig:
             },
         )
         assert len(config.initial_state["files"]) == 2
+
+    def test_proxy_oracle_default_none(self) -> None:
+        from axiom.models import TaskConfig
+
+        config = TaskConfig(
+            name="t",
+            env="axiomchat",
+            description="d",
+            goal={"type": "custom_js", "script": "true"},
+        )
+        assert config.proxy is None
+        assert config.oracle is None
+
+    def test_proxy_oracle_additive_fields(self) -> None:
+        from axiom.models import TaskConfig
+
+        config = TaskConfig(
+            name="answer_support_question",
+            env="axiomchat",
+            description="Answer the support question.",
+            seed=42,
+            scale="medium",
+            goal={"type": "custom_js", "script": "true"},
+            proxy={
+                "scenario": "support_question",
+                "v0": {"type": "dom_thread_reply", "require_resolved": True},
+                "v1": {"type": "dom_thread_reply", "require_resolved": True, "min_chars": 40},
+            },
+            oracle={"type": "support_answer", "scenario": "support_question", "k_frac": 0.6},
+        )
+        assert config.proxy is not None
+        assert config.proxy["v0"]["require_resolved"] is True
+        assert config.oracle["type"] == "support_answer"
+
+    def test_all_existing_task_yaml_still_loads(self) -> None:
+        from pathlib import Path
+
+        from axiom.core.task_loader import TaskLoader
+
+        loader = TaskLoader(Path(__file__).resolve().parent.parent / "tasks")
+        tasks = loader.list_tasks()
+        # Backward-compatible: every shipped task still parses, proxy/oracle
+        # default to None for tasks that don't declare them.
+        assert len(tasks) >= 13
+        for t in tasks:
+            assert hasattr(t, "proxy")
+            assert hasattr(t, "oracle")
