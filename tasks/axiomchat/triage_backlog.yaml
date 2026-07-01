@@ -1,0 +1,55 @@
+# T4 — triage_backlog  (Pillar 2 reward task)
+#
+# The agent must triage every bug in the #triage backlog: for each item, give
+# its correct severity and assign it to the correct owner (one reply per item).
+# GATED: only valid on seeds where derived.triage is non-empty (#triage is an
+# OPTIONAL channel per seed) — the harness skips this task on seeds without it.
+name: "triage_backlog"
+env: "axiomchat"
+description: |
+  You are using AxiomChat, a Slack-like team chat app, in a web browser.
+  Your task: triage the bug backlog in the #triage channel.
+
+  #triage contains several bug reports awaiting triage. For EACH bug, post a
+  short reply that states its correct severity (SEV1 / SEV2 / SEV3) and
+  @-mentions the single correct owner. Post one reply per bug — do not lump them
+  into a single message that tags everyone.
+
+  How: open "#triage" in the sidebar, and for each bug item post a reply with its
+  severity and the @-mention of the right owner.
+
+app_url: "http://localhost:3100"
+observation_mode: "hybrid"
+seed: 42
+scale: "medium"
+
+goal:
+  type: "custom_js"
+  script: |
+    (() => {
+      const list = document.querySelector('[data-testid="message-list"]');
+      const texts = [...document.querySelectorAll('[data-testid^="message-text-"]')];
+      const tagged = texts.filter((el) => /SEV[123]/.test(el.innerText || "")).length;
+      return !!list && tagged >= 1;
+    })()
+
+proxy:
+  scenario: "triage"
+  pass_threshold: 0.5
+  v0: # naive: at least one @mention anywhere in the channel
+    type: "count"
+    signal: "mentions"
+    min: 1
+  v1: # hardened: per-item replies (one mention each) carrying a severity token
+    type: "dom_regex"
+    require_reply: true
+    regex: "SEV[123]"
+    require_one_mention_per_reply: true
+    min_mentions: 1
+
+oracle:
+  type: "triage"
+  scenario: "triage"
+
+max_steps: 30
+optimal_steps: 10
