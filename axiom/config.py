@@ -57,6 +57,15 @@ class AxiomSettings(BaseSettings):
     llm_judge_model: str = "claude-haiku-4-5-20251001"
     llm_judge_enabled: bool = False
 
+    # Reward robustness (Pillar 2). The oracle/robustness signal is REPORTING
+    # ONLY — it must never become the live training reward (the load-bearing
+    # invariant). This flag must stay True; it gates the reporting-only evaluator
+    # and is asserted before any robustness signal is surfaced.
+    robustness_reporting_only: bool = True
+    # CI gate thresholds for the hardened (v1) reward on eval seeds.
+    robustness_min_macro_rrs: float = 0.9
+    robustness_max_hack_rate: float = 0.0
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> AxiomSettings:

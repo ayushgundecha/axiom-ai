@@ -59,3 +59,18 @@ class SessionError(AxiomError):
 
 class EvaluationError(AxiomError):
     """Failure during goal checking or score computation."""
+
+
+# ---------------------------------------------------------------------------
+# Robustness / oracle errors (Pillar 2)
+# ---------------------------------------------------------------------------
+
+
+class OracleError(AxiomError):
+    """Failure fetching or parsing the privileged oracle state.
+
+    Raised by the robustness harness when the token-gated
+    ``GET /api/_oracle/state`` endpoint is unreachable, returns a non-200
+    status (e.g. 403 when the ``X-Oracle-Token`` is missing or wrong), or
+    returns a payload missing the ``derived`` ground-truth block.
+    """
