@@ -16,6 +16,7 @@ Key design decisions:
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import anthropic
@@ -150,7 +151,10 @@ class ClaudeAgent:
         prompt_parts: list[str] = [f"Task: {obs.get('task_description', '')}"]
 
         if obs.get("dom_tree"):
-            dom = str(obs["dom_tree"])[:3000]
+            # AxiomChat's simplified DOM runs ~30-35k chars for a channel + open
+            # thread; the reply input / send / resolve controls live near the END,
+            # so a small window hides exactly the elements the agent must act on.
+            dom = str(obs["dom_tree"])[:50000]
             prompt_parts.append(f"Current page DOM:\n{dom}")
 
         if obs.get("text_output"):
@@ -181,11 +185,18 @@ class ClaudeAgent:
         available = obs.get("available_action_types", [])
         if "click" in available:
             prompt_parts.append(
-                "For browser actions, use CSS selectors like "
-                "[data-testid='todo-input'] or #element-id.\n"
-                "Respond with ONLY a JSON object (no markdown):\n"
-                '{"type": "click|type|press_key", '
-                '"selector": "css-selector", "value": "text-or-key"}'
+                "For browser actions, use a CSS selector that appears VERBATIM in the "
+                "DOM above — copy the element's exact data-testid or href (e.g. "
+                "[data-testid='dm-link-dm_u_lena'] or [data-testid='reply-send-m4']). "
+                "Do NOT invent or guess selectors from display names/ids; prefer "
+                "[data-testid='...']. To type, target the input's exact testid.\n\n"
+                "Respond with ONLY ONE flat JSON object — no nesting, no markdown, no "
+                "explanation. Use exactly one of these shapes:\n"
+                '  {"type":"click","selector":"[data-testid=\'...\']"}\n'
+                '  {"type":"type","selector":"[data-testid=\'...\']","value":"text to type"}\n'
+                '  {"type":"press_key","value":"Enter"}\n'
+                '  {"type":"done"}   (only when the task is fully complete)\n'
+                'Do NOT wrap the action inside another object (no {"action": ...}).'
             )
         elif "run_command" in available:
             prompt_parts.append(
@@ -217,7 +228,7 @@ class ClaudeAgent:
         # Call Claude
         response = self.client.messages.create(
             model=self.model,
-            max_tokens=300,
+            max_tokens=512,
             system=system,
             messages=[{"role": "user", "content": content_blocks}],
         )
@@ -229,16 +240,39 @@ class ClaudeAgent:
         return self._parse_action(text)
 
     def _parse_action(self, text: str) -> dict[str, Any]:
-        """Parse Claude's response into an action dict. Handles markdown fences."""
-        # Strip markdown code fences if present
+        """Parse Claude's response into a flat action dict.
+
+        Robust to how models actually reply: markdown fences, a JSON object
+        embedded in prose, and a nested ``{"action": {...}}`` /
+        ``{"type":"action","action":{...}}`` wrapper (all seen from Sonnet). On
+        genuine failure, returns a harmless no-op that gets a small penalty.
+        """
+        text = text.strip()
+        # Strip markdown code fences if present.
         if text.startswith("```"):
             text = text.split("\n", 1)[1] if "\n" in text else text[3:]
             if "```" in text:
                 text = text.rsplit("```", 1)[0]
             text = text.strip()
 
+        obj: Any = None
         try:
-            return json.loads(text)  # type: ignore[no-any-return]
+            obj = json.loads(text)
         except json.JSONDecodeError:
-            # Fallback: return a no-op that will get a small penalty
+            match = re.search(r"\{.*\}", text, re.DOTALL)  # first {...} in prose
+            if match:
+                try:
+                    obj = json.loads(match.group(0))
+                except json.JSONDecodeError:
+                    obj = None
+
+        if not isinstance(obj, dict):
             return {"type": "press_key", "value": "Escape"}
+
+        # Unwrap a nested action wrapper, e.g. {"action": {...}} or
+        # {"type":"action","action":{...}}.
+        inner = obj.get("action")
+        if isinstance(inner, dict):
+            obj = inner
+
+        return obj
