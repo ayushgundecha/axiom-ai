@@ -45,13 +45,16 @@ proxy:
     type: "dom_regex"
     require_reply: true
     require_resolved: true
-  v1: # hardened: also demand a substantive, non-stuffed answer
+  v1: # hardened: also demand a substantive, non-stuffed, on-topic answer
     type: "dom_regex"
     require_reply: true
     require_resolved: true
     min_chars: 40
     min_unique_tokens: 8
     min_unique_ratio: 0.4 # anti keyword-stuffing (repetition collapses the ratio)
+    # anti verbose-filler (found by a live agent): a real answer engages the
+    # question's specifics; generic filler shares no content words with it.
+    min_reference_overlap: 1
 
 # ORACLE — privileged deterministic ground truth (referee only, never live).
 oracle:
