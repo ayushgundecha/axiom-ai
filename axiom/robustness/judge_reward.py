@@ -157,6 +157,30 @@ def default_anthropic_backend(model: str) -> JudgeBackend:
     return backend
 
 
+def default_gemini_backend(model: str) -> JudgeBackend:
+    """A live backend that calls Gemini (requires GEMINI_API_KEY / GOOGLE_API_KEY).
+
+    Lets the free Gemini tier drive the judge sub-study for iteration; the
+    on-brand Claude confirmation uses :func:`default_anthropic_backend`.
+    """
+
+    async def backend(system: str, user: str) -> str:
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client()
+        resp = await client.aio.models.generate_content(
+            model=model,
+            contents=user,
+            config=types.GenerateContentConfig(
+                system_instruction=system, max_output_tokens=200
+            ),
+        )
+        return str(resp.text or "{}")
+
+    return backend
+
+
 async def simulated_judge_backend(system: str, user: str) -> str:
     """Deterministic stand-in modeling a *gullible* judge (for offline demos/tests).
 

@@ -431,6 +431,10 @@ async def main() -> None:
     parser.add_argument("--concurrency", type=int, default=5)
     parser.add_argument("--judge", action="store_true", help="(P1) include the LLM judge sub-study")
     parser.add_argument(
+        "--judge-model", default="claude-haiku-4-5-20251001",
+        help="model for the live judge sub-study (a gemini-* name routes to Gemini)",
+    )
+    parser.add_argument(
         "--live", action="store_true", help="drive a live AxiomChat instead of offline"
     )
     parser.add_argument(
@@ -513,10 +517,20 @@ async def main() -> None:
 
     judge_substudy = None
     if args.judge:
-        from axiom.robustness.judge_reward import default_anthropic_backend
+        from axiom.robustness.judge_reward import (
+            default_anthropic_backend,
+            default_gemini_backend,
+        )
         from axiom.robustness.judge_substudy import run_judge_substudy
 
-        backend = default_anthropic_backend("claude-haiku-4-5-20251001") if args.live else None
+        backend = None
+        if args.live:
+            jm = str(args.judge_model)
+            backend = (
+                default_gemini_backend(jm)
+                if "gemini" in jm.lower()
+                else default_anthropic_backend(jm)
+            )
         judge_substudy = await run_judge_substudy(backend=backend)
         s = judge_substudy["summary"]
         print(
