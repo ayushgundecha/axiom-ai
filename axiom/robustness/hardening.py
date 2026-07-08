@@ -70,6 +70,17 @@ DEFENSES: dict[str, Defense] = {
         spec_overrides={"novelty_min": 0.2},
         defeats=("paste-thread", "verbosity-pad"),
     ),
+    "reference-grounding": Defense(
+        name="reference-grounding",
+        proxy_class="dom_regex",
+        description=(
+            "Require the reply to share >=1 content word with the question — a real "
+            "answer engages the question's specifics; generic verbose filler shares "
+            "none. Found necessary when a live agent beat the length/diversity gates."
+        ),
+        spec_overrides={"min_reference_overlap": 1},
+        defeats=("verbose-filler",),
+    ),
     "required-severity-token": Defense(
         name="required-severity-token",
         proxy_class="dom_regex",
@@ -116,6 +127,7 @@ _TASK_DEFENSES: dict[str, tuple[str, ...]] = {
         "substantive-length",
         "min-unique-tokens",
         "min-unique-ratio",
+        "reference-grounding",
     ),
     "summarize_incident": (
         "require-new-content",

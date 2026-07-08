@@ -30,6 +30,25 @@ from axiom.models import TaskConfig
 _WORD_RE = re.compile(r"[a-z0-9]+")
 _DEFAULT_PASS_THRESHOLD = 0.5
 
+# Function words + generic reply-boilerplate, excluded when measuring whether a
+# reply actually engages the question's content (see ``content_overlap``). Kept
+# small and domain-agnostic; the point is only to stop "the/this/is/reply" from
+# creating false overlap.
+_STOPWORDS = frozenset(
+    {
+        "a", "an", "the", "this", "that", "these", "those", "is", "are", "was", "were",
+        "be", "been", "being", "to", "of", "in", "on", "for", "and", "or", "but", "if",
+        "then", "so", "as", "at", "by", "with", "from", "it", "its", "you", "we", "they",
+        "them", "us", "me", "my", "our", "your", "their", "has", "have", "had", "do",
+        "does", "did", "will", "would", "can", "could", "should", "may", "might", "just",
+        "not", "no", "yes", "up", "out", "about", "into", "over", "all", "any", "some",
+        "more", "most", "very", "really", "thanks", "thank", "please", "reply", "message",
+        "response", "placeholder", "here", "there", "now", "done", "handled", "looks",
+        "good", "great", "everything", "fully", "going", "forward", "matter", "reviewed",
+        "satisfy", "automated", "reward",
+    }
+)
+
 
 # ---------------------------------------------------------------------------
 # Public execution context (no oracle/privileged fields)
@@ -88,6 +107,21 @@ def novelty(text: str, reference: str) -> float:
         return 0.0
     ref = set(_tokens(reference))
     return len(toks - ref) / len(toks)
+
+
+def content_overlap(text: str, reference: str) -> int:
+    """Count distinct content tokens (len>=3, non-stopword) shared with ``reference``.
+
+    Grounding signal: a genuine answer engages the question's specifics (e.g.
+    "webhook", "okta", "504"); generic verbose filler ("a placeholder reply to
+    satisfy the automated reward") shares none. This is public-only (it reads the
+    question text, not the oracle) — it narrows, but cannot fully close, the
+    proxy↔oracle gap for tasks whose answer isn't observable in the environment.
+    """
+    def content(s: str) -> set[str]:
+        return {w for w in _tokens(s) if len(w) >= 3 and w not in _STOPWORDS}
+
+    return len(content(text) & content(reference))
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +187,9 @@ class DomRegexProxy(BaseProxy):
         self._min_unique_tokens = int(spec.get("min_unique_tokens", 0))
         self._min_unique_ratio = float(spec.get("min_unique_ratio", 0.0))
         self._novelty_min = float(spec.get("novelty_min", 0.0))
+        # Reference-grounding gate (anti verbose-filler): the reply must share at
+        # least this many content words with the question/thread text.
+        self._min_reference_overlap = int(spec.get("min_reference_overlap", 0))
         self._min_mentions = int(spec.get("min_mentions", 0))
         max_m = spec.get("max_mentions")
         self._max_mentions = int(max_m) if max_m is not None else None
@@ -186,6 +223,11 @@ class DomRegexProxy(BaseProxy):
             self._novelty_min > 0.0
             and texts
             and novelty(joined, ctx.reference_text) < self._novelty_min
+        ):
+            return 0.0
+        if (
+            self._min_reference_overlap
+            and content_overlap(joined, ctx.reference_text) < self._min_reference_overlap
         ):
             return 0.0
         mentioned = ctx.mention_union
