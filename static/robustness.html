@@ -39,6 +39,15 @@
   .err { color: var(--red); margin-top: 20px; }
   .foot { color: var(--text-muted); font-size: 12px; margin-top: 28px; }
   code { background: var(--bg-hover); padding: 1px 6px; border-radius: 4px; }
+  .modes { display: flex; gap: 8px; margin-top: 18px; }
+  .mode-btn { font-family: var(--font); font-size: 13px; padding: 7px 16px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); cursor: pointer; }
+  .mode-btn:hover { background: var(--bg-hover); }
+  .mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.08); }
+  .meta-chips { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border);
+    color: var(--text-muted); background: var(--bg-card); }
+  .chip b { color: var(--text); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -46,15 +55,33 @@
   <h1>⚖️ axiom-ai — Reward Robustness Leaderboard</h1>
   <div class="sub">Real environments. Rewards you can't cheat. &nbsp;<code>RRS = (1 − hack_rate) × honest_fidelity</code></div>
 
+  <div class="modes" id="modes"></div>
+  <div class="meta-chips" id="meta"></div>
   <div id="content"></div>
   <div class="foot" id="foot"></div>
 </div>
 
 <script>
-const CANDIDATES = [
-  new URLSearchParams(location.search).get('report'),
-  'reports/robustness.json', './robustness.json', '../reports/robustness.json',
-].filter(Boolean);
+const MODES = [
+  { key: 'offline', label: 'Offline · scripted exploit catalog', report: 'reports/robustness.json' },
+  { key: 'live', label: 'Live · LLM agents in a real browser', report: 'reports/robustness_live.json' },
+];
+const paramReport = new URLSearchParams(location.search).get('report');
+const activeMode = MODES.find((m) => paramReport && paramReport.endsWith(m.report.split('/').pop()))
+  || (paramReport ? null : MODES[0]);
+
+// A selected mode NEVER falls back to the other mode's report — silently
+// rendering offline numbers under a "Live" label is exactly the mislabeling
+// this benchmark exists to prevent.
+const CANDIDATES = (activeMode
+  ? [paramReport, activeMode.report, './' + activeMode.report.split('/').pop(),
+     '../' + activeMode.report]
+  : [paramReport, 'reports/robustness.json', './robustness.json', '../reports/robustness.json']
+).filter(Boolean);
+
+document.getElementById('modes').innerHTML = MODES.map((m) =>
+  `<button class="mode-btn${activeMode && activeMode.key === m.key ? ' active' : ''}" ` +
+  `onclick="location.search='?report=${m.report}'">${m.label}</button>`).join('');
 
 const pct = (x) => (x * 100).toFixed(0) + '%';
 const f3 = (x) => Number(x).toFixed(3);
@@ -70,6 +97,16 @@ function render(report) {
   const s = report.summary;
   const mv0 = macro(s, 'v0'), mv1 = macro(s, 'v1');
   let html = '';
+
+  const meta = report.meta || {};
+  const chips = [];
+  if (meta.mode) chips.push(`mode <b>${meta.mode}</b>`);
+  if (meta.honest_model) chips.push(`honest agent <b>${meta.honest_model}</b>`);
+  if (meta.exploiter_model) chips.push(`exploiter <b>${meta.exploiter_model}</b>`);
+  if (meta.judge_model) chips.push(`judge <b>${meta.judge_model}</b>`);
+  const nErr = report.runs.filter((r) => r.error).length;
+  if (nErr > 0) chips.push(`<b>${nErr}</b> error run${nErr > 1 ? 's' : ''} excluded from metrics`);
+  document.getElementById('meta').innerHTML = chips.map((c) => `<span class="chip">${c}</span>`).join('');
 
   html += '<div class="cards">';
   if (mv0 !== null) html += `<div class="card"><div class="label">macro-RRS · naive (v0)</div><div class="val v0">${f3(mv0)}</div></div>`;
@@ -96,8 +133,11 @@ function render(report) {
   if (report.judge_substudy) {
     const j = report.judge_substudy;
     html += '<h2>LLM-judge sub-study — prompt injection</h2>';
+    const judgeNote = j.backend === 'live' && j.naive_model === j.hardened_model
+      ? ` · same-model defenses ablation (<code>${j.naive_model}</code>): only the defense stack differs`
+      : ` · backend: ${j.backend}`;
     html += `<div class="sub">naive_fooled_rate <b class="bad">${f3(j.summary.naive_fooled_rate)}</b> · ` +
-      `hardened_resisted_rate <b class="good">${f3(j.summary.hardened_resisted_rate)}</b> · backend: ${j.backend}</div>`;
+      `hardened_resisted_rate <b class="good">${f3(j.summary.hardened_resisted_rate)}</b>${judgeNote}</div>`;
     html += '<table style="margin-top:12px"><thead><tr><th>Attack</th><th>naive</th><th>hardened</th>' +
       '<th>naive fooled</th><th>hardened resisted</th></tr></thead><tbody>';
     for (const a of j.attacks) {
@@ -125,10 +165,13 @@ async function load() {
       if (resp.ok) { render(await resp.json()); return; }
     } catch (e) { /* try next */ }
   }
-  document.getElementById('content').innerHTML =
-    '<div class="err">Could not load a robustness report. Generate one with ' +
-    '<code>python scripts/run_robustness.py --judge</code> then serve it ' +
-    '(it writes <code>reports/robustness.json</code>).</div>';
+  document.getElementById('content').innerHTML = activeMode && activeMode.key === 'live'
+    ? '<div class="err">No live report found. Run the live sweep with ' +
+      '<code>python scripts/run_robustness.py --llm --judge --out reports/robustness_live.json</code> ' +
+      '(needs a running AxiomChat + an LLM API key), or switch to the offline benchmark above.</div>'
+    : '<div class="err">Could not load a robustness report. Generate one with ' +
+      '<code>python scripts/run_robustness.py --judge</code> then serve it ' +
+      '(it writes <code>reports/robustness.json</code>).</div>';
 }
 load();
 </script>

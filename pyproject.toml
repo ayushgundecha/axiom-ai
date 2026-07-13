@@ -10,6 +10,15 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Ayush Gundecha", email = "ayushgundecha123@gmail.com" }]
+keywords = [
+    "reinforcement-learning",
+    "agents",
+    "reward-hacking",
+    "goodharts-law",
+    "benchmark",
+    "playwright",
+    "environments",
+]
 
 dependencies = [
     "fastapi>=0.115.0",
@@ -23,6 +32,12 @@ dependencies = [
     "anthropic>=0.42.0",
     "google-genai>=1.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ayushgundecha/axiom-ai"
+Repository = "https://github.com/ayushgundecha/axiom-ai"
+Issues = "https://github.com/ayushgundecha/axiom-ai/issues"
+Leaderboard = "https://ayushgundecha.github.io/axiom-ai/"
 
 [project.optional-dependencies]
 dev = [

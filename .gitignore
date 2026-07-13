@@ -45,6 +45,18 @@ docker-compose.override.yml
 # Trajectories (large binary data)
 trajectories/*/
 
+# Private planning docs (local only — not published)
+docs/ROADMAP.md
+docs/deep-dive.md
+docs/pillar-*.md
+docs/minigym_v2_blueprint.md
+docs/final_touchdown.md
+docs/notes/
+
+# Scratch robustness reports (underscore-prefixed smokes)
+reports/_*.json
+reports/robustness_smoke*.json
+
 # Claude Code (local settings)
 .claude/settings.local.json
 
