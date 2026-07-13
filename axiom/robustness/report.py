@@ -58,13 +58,20 @@ def build_report(
     judge_substudy: dict[str, Any] | None = None,
     seed_split: dict[str, Any] | None = None,
     use_gap_variance: bool = False,
+    meta: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build the full robustness report dict (JSON-serializable)."""
+    """Build the full robustness report dict (JSON-serializable).
+
+    ``meta`` carries run-level provenance (mode, model names) so a report is
+    self-describing — consumers must never have to guess which agent produced
+    the numbers.
+    """
     return {
         "generated_at": generated_at,
         "seeds": seeds,
         "seed_split": seed_split,
         "scale": scale,
+        "meta": meta or {},
         "runs": [r.to_dict() for r in runs],
         "summary": build_summary(runs, use_gap_variance=use_gap_variance),
         "judge_substudy": judge_substudy,

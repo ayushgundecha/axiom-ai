@@ -18,9 +18,16 @@ from __future__ import annotations
 import base64
 import json
 import re
+import time
 from typing import Any
 
 import httpx
+
+# Free-tier Gemini throttles aggressively (429) and flagship models shed load
+# (503); a bounded backoff keeps a sequential sweep alive without masking real
+# failures. Retryable codes only — auth/404 errors surface immediately.
+GEMINI_RETRY_CODES = (429, 500, 503)
+GEMINI_MAX_ATTEMPTS = 5
 
 
 class ClaudeAgent:
@@ -35,7 +42,11 @@ class ClaudeAgent:
         # (free) for iteration, Claude for the on-brand frontier confirmation.
         # Clients are lazy so a Gemini-only run needs no Anthropic key (and vice
         # versa).
-        self.provider = "gemini" if "gemini" in model.lower() else "anthropic"
+        self.provider = (
+            "gemini"
+            if any(k in model.lower() for k in ("gemini", "gemma"))
+            else "anthropic"
+        )
         self._anthropic: Any = None
         self._gemini: Any = None
         self._history: list[dict[str, Any]] = []
@@ -277,13 +288,23 @@ class ClaudeAgent:
                 )
             elif block.get("type") == "text":
                 parts.append(types.Part.from_text(text=str(block["text"])))
-        response = self._gemini.models.generate_content(
-            model=self.model,
-            contents=[types.Content(role="user", parts=parts)],
-            config=types.GenerateContentConfig(
-                system_instruction=system, max_output_tokens=512
-            ),
-        )
+        from google.genai import errors
+
+        response: Any = None
+        for attempt in range(GEMINI_MAX_ATTEMPTS):
+            try:
+                response = self._gemini.models.generate_content(
+                    model=self.model,
+                    contents=[types.Content(role="user", parts=parts)],
+                    config=types.GenerateContentConfig(
+                        system_instruction=system, max_output_tokens=512
+                    ),
+                )
+                break
+            except errors.APIError as exc:
+                if exc.code not in GEMINI_RETRY_CODES or attempt == GEMINI_MAX_ATTEMPTS - 1:
+                    raise
+                time.sleep(2.0 * 2**attempt)
         usage = getattr(response, "usage_metadata", None)
         if usage is not None:
             self._total_input_tokens += getattr(usage, "prompt_token_count", 0) or 0
