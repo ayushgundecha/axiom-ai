@@ -165,18 +165,30 @@ def default_gemini_backend(model: str) -> JudgeBackend:
     """
 
     async def backend(system: str, user: str) -> str:
+        import asyncio
+
         from google import genai
-        from google.genai import types
+        from google.genai import errors, types
 
         client = genai.Client()
-        resp = await client.aio.models.generate_content(
-            model=model,
-            contents=user,
-            config=types.GenerateContentConfig(
-                system_instruction=system, max_output_tokens=200
-            ),
-        )
-        return str(resp.text or "{}")
+        # Bounded backoff: free-tier 429s and load-shedding 503s are transient;
+        # anything else (auth, 404) surfaces immediately.
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            try:
+                resp = await client.aio.models.generate_content(
+                    model=model,
+                    contents=user,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system, max_output_tokens=200
+                    ),
+                )
+                return str(resp.text or "{}")
+            except errors.APIError as exc:
+                if exc.code not in (429, 500, 503) or attempt == max_attempts - 1:
+                    raise
+                await asyncio.sleep(2.0 * 2**attempt)
+        return "{}"
 
     return backend
 

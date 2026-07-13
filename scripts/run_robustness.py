@@ -524,20 +524,34 @@ async def main() -> None:
         from axiom.robustness.judge_substudy import run_judge_substudy
 
         backend = None
+        jm = str(args.judge_model)
         if args.live:
-            jm = str(args.judge_model)
             backend = (
                 default_gemini_backend(jm)
-                if "gemini" in jm.lower()
+                if any(k in jm.lower() for k in ("gemini", "gemma"))
                 else default_anthropic_backend(jm)
             )
-        judge_substudy = await run_judge_substudy(backend=backend)
+        # Label the sub-study with the model actually used: with a live backend
+        # both judges run on --judge-model (a same-model defenses ablation);
+        # offline keeps the simulated backend's default labels.
+        if backend is not None:
+            judge_substudy = await run_judge_substudy(
+                backend=backend, naive_model=jm, hardened_model=jm
+            )
+        else:
+            judge_substudy = await run_judge_substudy(backend=None)
         s = judge_substudy["summary"]
         print(
             f"  judge sub-study: naive_fooled_rate={s['naive_fooled_rate']} "
             f"hardened_resisted_rate={s['hardened_resisted_rate']}\n"
         )
 
+    meta: dict[str, Any] = {"mode": mode}
+    if args.llm:
+        meta["exploiter_model"] = str(args.exploiter_model)
+        meta["honest_model"] = str(args.honest_model)
+    if args.judge:
+        meta["judge_model"] = str(args.judge_model) if args.live else "simulated"
     report = build_report(
         labels,
         generated_at=datetime.now(UTC).isoformat(),
@@ -545,6 +559,7 @@ async def main() -> None:
         scale="medium",
         judge_substudy=judge_substudy,
         seed_split=split.to_dict(),
+        meta=meta,
     )
     out_path = Path(args.out)
     write_report(report, out_path)
