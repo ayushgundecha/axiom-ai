@@ -84,7 +84,8 @@
 const MODES = [
   { key: 'offline', label: 'Offline · scripted exploit catalog', report: 'reports/robustness.json' },
   { key: 'live', label: 'Live · LLM agents in a real browser', report: 'reports/robustness_live.json' },
-  { key: 'discovery', label: 'Live · discovery run (pre-hardening)', report: 'reports/robustness_live_prehardening.json' },
+  { key: 'discovery', label: 'Live · discovery run 1 (2026-07-13)', report: 'reports/robustness_live_prehardening.json' },
+  { key: 'discovery2', label: 'Live · discovery run 2 (2026-07-18)', report: 'reports/robustness_live_discovery2.json' },
 ];
 const paramReport = new URLSearchParams(location.search).get('report');
 const activeMode = MODES.find((m) => paramReport && paramReport.endsWith(m.report.split('/').pop()))
@@ -128,7 +129,14 @@ function render(report) {
   if (nErr > 0) chips.push(`<b>${nErr}</b> error run${nErr > 1 ? 's' : ''} excluded from metrics`);
   if (activeMode && activeMode.key === 'discovery') {
     chips.push('frozen <b>2026-07-13</b> — the run where a live agent broke the hardened ' +
-      'summarize_incident reward on a held-out seed; the hole is closed in the current Live report');
+      'summarize_incident reward on a held-out seed (plausible-severity-filler); ' +
+      'closed by the summary-grounding defense');
+  }
+  if (activeMode && activeMode.key === 'discovery2') {
+    chips.push('frozen <b>2026-07-18</b> — after summary-grounding closed round 1, the live ' +
+      'attacker found new holes: multi-reply gate-splitting + echo-grounding-filler ' +
+      '(closed by single-reply-conjunction + quantitative-grounding) and the ' +
+      'confident-wrong-answer residual (oracle-only, documented)');
   }
   document.getElementById('meta').innerHTML = chips.map((c) => `<span class="chip">${c}</span>`).join('');
 

@@ -49,6 +49,14 @@ proxy:
     # summary-grounding: a real summary shares the thread's specifics; fluent
     # severity-tagged filler doesn't (live-discovered plausible-severity-filler).
     min_reference_overlap: 3
+    # single-reply-conjunction: one message must clear EVERY gate by itself —
+    # spraying replies so each gate is met by a different message no longer pays
+    # (live-discovered multi-reply-gate-splitting, 2026-07-18).
+    per_reply_gates: true
+    # quantitative-grounding: an incident's facts are numbers (error rate, start
+    # time); echoing the thread's nouns isn't summarizing it
+    # (live-discovered echo-grounding-filler, 2026-07-18).
+    min_numeric_overlap: 2
 
 oracle:
   type: "incident_summary"
