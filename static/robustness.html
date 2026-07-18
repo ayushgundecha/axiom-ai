@@ -48,11 +48,30 @@
   .chip { font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border);
     color: var(--text-muted); background: var(--bg-card); }
   .chip b { color: var(--text); font-weight: 600; }
+  /* Console nav (shared across demo / replay / leaderboard) */
+  .console-nav { display: flex; gap: 6px; margin-bottom: 14px; }
+  .console-nav a {
+    font-family: var(--font); font-size: 12px; text-decoration: none;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text-muted);
+  }
+  .console-nav a:hover { background: var(--bg-hover); color: var(--text); }
+  .console-nav a.active {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(88,166,255,.08);
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>⚖️ axiom-ai — Reward Robustness Leaderboard</h1>
+  <nav class="console-nav">
+    <a href="demo.html">Demo</a>
+    <a href="replay.html">Replay</a>
+    <a class="active" href="robustness.html">Leaderboard</a>
+    <a href="https://github.com/ayushgundecha/axiom-ai">GitHub</a>
+  </nav>
+  <h1>⚖️ axiom console — Reward Robustness Leaderboard</h1>
   <div class="sub">Real environments. Rewards you can't cheat. &nbsp;<code>RRS = (1 − hack_rate) × honest_fidelity</code></div>
 
   <div class="modes" id="modes"></div>
@@ -65,6 +84,7 @@
 const MODES = [
   { key: 'offline', label: 'Offline · scripted exploit catalog', report: 'reports/robustness.json' },
   { key: 'live', label: 'Live · LLM agents in a real browser', report: 'reports/robustness_live.json' },
+  { key: 'discovery', label: 'Live · discovery run (pre-hardening)', report: 'reports/robustness_live_prehardening.json' },
 ];
 const paramReport = new URLSearchParams(location.search).get('report');
 const activeMode = MODES.find((m) => paramReport && paramReport.endsWith(m.report.split('/').pop()))
@@ -106,6 +126,10 @@ function render(report) {
   if (meta.judge_model) chips.push(`judge <b>${meta.judge_model}</b>`);
   const nErr = report.runs.filter((r) => r.error).length;
   if (nErr > 0) chips.push(`<b>${nErr}</b> error run${nErr > 1 ? 's' : ''} excluded from metrics`);
+  if (activeMode && activeMode.key === 'discovery') {
+    chips.push('frozen <b>2026-07-13</b> — the run where a live agent broke the hardened ' +
+      'summarize_incident reward on a held-out seed; the hole is closed in the current Live report');
+  }
   document.getElementById('meta').innerHTML = chips.map((c) => `<span class="chip">${c}</span>`).join('');
 
   html += '<div class="cards">';

@@ -7,27 +7,28 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+  /* Console theme — same GitHub-dark tokens as replay.html / robustness.html */
   :root {
-    --bg: #050508;
-    --bg-card: #0a0a0f;
-    --bg-surface: #0f0f16;
-    --bg-hover: #14141e;
-    --border: #1a1a2e;
-    --border-bright: #2a2a44;
-    --text: #ebebf5;
-    --text-secondary: #9898b0;
-    --text-dim: #5a5a72;
-    --accent: #6366f1;
-    --accent-light: #818cf8;
-    --accent-glow: rgba(99,102,241,0.25);
-    --accent-glow-strong: rgba(99,102,241,0.5);
-    --green: #10b981;
-    --green-glow: rgba(16,185,129,0.2);
-    --amber: #f59e0b;
-    --red: #ef4444;
-    --cyan: #06b6d4;
-    --purple: #a78bfa;
-    --pink: #ec4899;
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-surface: #1c2128;
+    --bg-hover: #21262d;
+    --border: #30363d;
+    --border-bright: #3d444d;
+    --text: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-dim: #6e7681;
+    --accent: #58a6ff;
+    --accent-light: #79c0ff;
+    --accent-glow: rgba(88,166,255,0.25);
+    --accent-glow-strong: rgba(88,166,255,0.5);
+    --green: #3fb950;
+    --green-glow: rgba(63,185,80,0.2);
+    --amber: #d29922;
+    --red: #f85149;
+    --cyan: #39c5cf;
+    --purple: #bc8cff;
+    --pink: #f778ba;
     --mono: 'JetBrains Mono', monospace;
     --sans: 'Inter', -apple-system, sans-serif;
   }
@@ -109,6 +110,20 @@
   }
   .topbar-stat .val { color: var(--text-secondary); font-weight: 600; }
 
+  /* === CONSOLE NAV (shared across demo / replay / leaderboard) === */
+  .console-nav { display: flex; gap: 6px; }
+  .console-nav a {
+    font-family: var(--mono); font-size: 12px; text-decoration: none;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg-surface);
+    color: var(--text-secondary);
+  }
+  .console-nav a:hover { background: var(--bg-hover); color: var(--text); }
+  .console-nav a.active {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(88,166,255,.08);
+  }
+
   /* === MAIN LAYOUT === */
   .main { display: flex; flex: 1; overflow: hidden; }
 
@@ -141,14 +156,16 @@
     transition: all 0.2s;
   }
   .env-btn:hover { border-color: var(--border-bright); background: var(--bg-hover); }
-  .env-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.08); animation: pulseGlow 3s infinite; }
-  .env-btn.done { border-color: var(--green); background: rgba(16,185,129,0.06); box-shadow: none; animation: none; }
-  .env-btn[data-env="webapp"] .env-icon { background: rgba(6,182,212,0.1); color: var(--cyan); border: 1px solid rgba(6,182,212,0.2); }
-  .env-btn[data-env="cli"] .env-icon { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
-  .env-btn[data-env="json"] .env-icon { background: rgba(167,139,250,0.1); color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
-  .env-btn[data-env="webapp"].active { border-color: var(--cyan); box-shadow: 0 0 16px rgba(6,182,212,0.2); }
-  .env-btn[data-env="cli"].active { border-color: var(--green); box-shadow: 0 0 16px rgba(16,185,129,0.2); }
-  .env-btn[data-env="json"].active { border-color: var(--purple); box-shadow: 0 0 16px rgba(167,139,250,0.2); }
+  .env-btn.active { border-color: var(--accent); background: rgba(88,166,255,0.08); animation: pulseGlow 3s infinite; }
+  .env-btn.done { border-color: var(--green); background: rgba(63,185,80,0.06); box-shadow: none; animation: none; }
+  .env-btn[data-env="axiomchat"] .env-icon { background: rgba(88,166,255,0.1); color: var(--accent); border: 1px solid rgba(88,166,255,0.2); }
+  .env-btn[data-env="axiomchat"].active { border-color: var(--accent); box-shadow: 0 0 16px rgba(88,166,255,0.2); }
+  .env-btn[data-env="webapp"] .env-icon { background: rgba(57,197,207,0.1); color: var(--cyan); border: 1px solid rgba(57,197,207,0.2); }
+  .env-btn[data-env="cli"] .env-icon { background: rgba(63,185,80,0.1); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
+  .env-btn[data-env="json"] .env-icon { background: rgba(188,140,255,0.1); color: var(--purple); border: 1px solid rgba(188,140,255,0.2); }
+  .env-btn[data-env="webapp"].active { border-color: var(--cyan); box-shadow: 0 0 16px rgba(57,197,207,0.2); }
+  .env-btn[data-env="cli"].active { border-color: var(--green); box-shadow: 0 0 16px rgba(63,185,80,0.2); }
+  .env-btn[data-env="json"].active { border-color: var(--purple); box-shadow: 0 0 16px rgba(188,140,255,0.2); }
   .env-btn .env-icon {
     width: 28px; height: 28px;
     display: flex; align-items: center; justify-content: center;
@@ -295,7 +312,7 @@
     animation: ringPulse 3s ease-in-out infinite;
   }
   .obs-empty .orb-3 {
-    inset: -15px; border: 1px solid rgba(99,102,241,0.08);
+    inset: -15px; border: 1px solid rgba(88,166,255,0.08);
     animation: ringPulse 3s ease-in-out 1s infinite;
   }
   .obs-empty .orb-center {
@@ -336,7 +353,7 @@
     border-left: 2px solid transparent;
     transition: border-color 0.2s;
   }
-  .log-item.current { border-left-color: var(--accent); background: rgba(99,102,241,0.04); }
+  .log-item.current { border-left-color: var(--accent); background: rgba(88,166,255,0.04); }
   .log-item .log-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 3px;
@@ -350,7 +367,7 @@
     padding: 1px 6px; border-radius: 4px;
     font-weight: 600;
   }
-  .log-item .reward-badge.pos { background: rgba(16,185,129,0.1); color: var(--green); }
+  .log-item .reward-badge.pos { background: rgba(63,185,80,0.1); color: var(--green); }
   .log-item .reward-badge.neg { background: rgba(239,68,68,0.1); color: var(--red); }
   .log-item .reward-badge.zero { background: var(--bg-surface); color: var(--text-dim); }
   .log-item .action-text {
@@ -367,7 +384,7 @@
     font-family: var(--mono); font-size: 13px; font-weight: 700;
     animation: fadeUp 0.4s ease both;
   }
-  .done-banner.success { background: rgba(16,185,129,0.1); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .done-banner.success { background: rgba(63,185,80,0.1); color: var(--green); border: 1px solid rgba(63,185,80,0.2); }
   .done-banner.timeout { background: rgba(245,158,11,0.1); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
 
   /* === BOTTOM BAR === */
@@ -396,18 +413,23 @@
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="topbar-left">
-    <div class="logo">axiom-ai <span>mission control</span></div>
+    <div class="logo">axiom console <span>/ demo</span></div>
+    <nav class="console-nav">
+      <a class="active" href="demo.html">Demo</a>
+      <a href="replay.html">Replay</a>
+      <a href="robustness.html">Leaderboard</a>
+      <a href="https://github.com/ayushgundecha/axiom-ai">GitHub</a>
+    </nav>
     <div class="server-badge">
       <div class="server-dot" id="srv-dot"></div>
       <span id="srv-text">connecting...</span>
     </div>
   </div>
   <div class="topbar-right">
-    <div class="topbar-stat">tests <span class="val">100</span></div>
-    <div class="topbar-stat">typed <span class="val">31</span></div>
+    <div class="topbar-stat">tests <span class="val">338</span></div>
     <div class="topbar-stat">strict <span class="val">mypy</span></div>
-    <div class="topbar-stat">envs <span class="val">3</span></div>
-    <div class="topbar-stat">tasks <span class="val">7</span></div>
+    <div class="topbar-stat">envs <span class="val">4</span></div>
+    <div class="topbar-stat">tasks <span class="val">17</span></div>
   </div>
 </div>
 
@@ -418,6 +440,14 @@
   <div class="sidebar">
     <div class="sidebar-section">
       <div class="sidebar-label">Environments</div>
+      <button class="env-btn" id="env-axiomchat" data-env="axiomchat" onclick="pickEnv('axiomchat')">
+        <div class="env-icon">&#128172;</div>
+        <div class="env-info">
+          <div class="env-name">AxiomChat</div>
+          <div class="env-tech">mini-Slack &middot; oracle-graded</div>
+        </div>
+        <div class="env-status" id="env-axiomchat-status">idle</div>
+      </button>
       <button class="env-btn" id="env-webapp" data-env="webapp" onclick="pickEnv('webapp')">
         <div class="env-icon">&#127760;</div>
         <div class="env-info">
@@ -536,6 +566,22 @@
     } catch {
       document.getElementById('srv-dot').className = 'server-dot off';
       document.getElementById('srv-text').textContent = 'offline';
+      // No API (e.g. viewing the hosted console on GitHub Pages): the live demo
+      // needs your machine's browser + trajectories, so show the local recipe.
+      obsArea.innerHTML = `
+        <div class="obs-empty">
+          <h2>The live demo runs locally</h2>
+          <p style="max-width:520px;margin:12px auto 0;line-height:1.8">
+            This tab animates real agent episodes from your own <code>trajectories/</code> —
+            it needs the axiom API on your machine:<br><br>
+            <code style="color:var(--accent-light)">git clone https://github.com/ayushgundecha/axiom-ai && cd axiom-ai</code><br>
+            <code style="color:var(--accent-light)">make dev &amp;&amp; uvicorn axiom.api.app:create_app --factory</code><br>
+            <code style="color:var(--accent-light)">python scripts/run_demo.py --env axiomchat --task post_message</code><br><br>
+            Meanwhile: <a href="replay.html" style="color:var(--accent)">Replay</a> steps through the
+            committed exploit evidence right here, and the
+            <a href="robustness.html" style="color:var(--accent)">Leaderboard</a> has the scores.
+          </p>
+        </div>`;
     }
   }
 
@@ -663,7 +709,7 @@
     const obs = step.observation || {};
     const type = trajectory.env_type || envName;
 
-    if (type === 'webapp' && sessionId) {
+    if ((type === 'webapp' || type === 'axiomchat') && sessionId) {
       const imgUrl = API + '/trajectories/' + sessionId + '/screenshots/step_' + step.step_num + '.png';
       const img = new Image();
       img.onload = () => { obsArea.innerHTML = ''; obsArea.appendChild(img); };

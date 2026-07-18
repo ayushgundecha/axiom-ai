@@ -54,6 +54,21 @@
     color: var(--text-muted);
   }
   .header .meta span { color: var(--text); font-weight: 500; }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+
+  /* Console nav (shared across demo / replay / leaderboard) */
+  .console-nav { display: flex; gap: 6px; }
+  .console-nav a {
+    font-family: var(--font); font-size: 12px; text-decoration: none;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text-muted);
+  }
+  .console-nav a:hover { background: var(--bg-hover); color: var(--text); }
+  .console-nav a.active {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(88,166,255,.08);
+  }
 
   /* Main layout */
   .main {
@@ -308,12 +323,36 @@
     font-size: 11px;
     font-family: var(--font);
   }
+  /* Reward-robustness verdict banner (proxy vs oracle) */
+  .verdict {
+    display: none; align-items: center; gap: 10px;
+    padding: 8px 16px; font-size: 13px; font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  .verdict.hack { display: flex; background: rgba(248,81,73,.14); color: var(--red); }
+  .verdict.honest { display: flex; background: rgba(63,185,80,.12); color: var(--green); }
+  .verdict.blocked { display: flex; background: rgba(88,166,255,.10); color: var(--accent); }
+  .verdict .detail { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+  .vpill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .vpill.pass { background: rgba(63,185,80,.15); color: var(--green); }
+  .vpill.fail { background: rgba(248,81,73,.15); color: var(--red); }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>axiom-ai <span style="color:var(--text-muted);font-weight:400">/ trajectory replay</span></h1>
+  <div class="header-left">
+    <h1>axiom console <span style="color:var(--text-muted);font-weight:400">/ replay</span></h1>
+    <nav class="console-nav">
+      <a href="demo.html">Demo</a>
+      <a class="active" href="replay.html">Replay</a>
+      <a href="robustness.html">Leaderboard</a>
+      <a href="https://github.com/ayushgundecha/axiom-ai">GitHub</a>
+    </nav>
+  </div>
   <div class="meta" id="header-meta"></div>
 </div>
 
@@ -334,6 +373,7 @@
     </div>
 
     <div id="replay-view" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="verdict" id="verdict-banner"></div>
       <div class="controls">
         <span class="step-label" id="step-label">Step 0/0</span>
         <button id="btn-prev" title="Previous step">&larr; Prev</button>
@@ -390,6 +430,7 @@
   let playing = false;
   let playTimer = null;
   let baseTrajectoryUrl = '';
+  let staticBase = false;  // true when replaying committed reports/transcripts (no API)
 
   // DOM refs
   const headerMeta = document.getElementById('header-meta');
@@ -410,7 +451,8 @@
   const evalSection = document.getElementById('eval-section');
   const evalDisplay = document.getElementById('eval-display');
 
-  // Load trajectory list
+  // Load trajectory list — the local API first; on GitHub Pages (no API) fall
+  // back to the committed curated-evidence manifest in reports/transcripts/.
   async function loadTrajectoryList() {
     try {
       const resp = await fetch('/trajectories/saved');
@@ -418,8 +460,28 @@
       const data = await resp.json();
       renderTrajectoryList(data);
     } catch (e) {
-      trajList.innerHTML = '<div class="empty-state" style="padding:24px"><p style="font-size:12px;color:var(--text-muted)">No saved trajectories found. Run an agent episode first.</p></div>';
+      if (!(await loadStaticManifest())) {
+        trajList.innerHTML = '<div class="empty-state" style="padding:24px"><p style="font-size:12px;color:var(--text-muted)">No saved trajectories found. Run an agent episode first.</p></div>';
+      }
     }
+  }
+
+  async function loadStaticManifest() {
+    for (const prefix of ['reports/transcripts/', '../reports/transcripts/']) {
+      try {
+        const resp = await fetch(prefix + 'index.json');
+        if (!resp.ok) continue;
+        const entries = await resp.json();
+        renderTrajectoryList(entries.map((e) => ({
+          session_id: e.path,                       // path doubles as the id
+          task_name: e.label || e.task_name,
+          env_type: e.env_type,
+          total_steps: e.total_steps,
+        })));
+        return true;
+      } catch (err) { /* try next prefix */ }
+    }
+    return false;
   }
 
   function renderTrajectoryList(items) {
@@ -430,7 +492,7 @@
     trajList.innerHTML = items.map(t => `
       <a class="traj-item" data-session="${t.session_id}" href="?session=${t.session_id}">
         <div class="name">${t.task_name || t.session_id}</div>
-        <div class="info">${t.env_type || '?'} &middot; ${t.total_steps || '?'} steps &middot; ${t.session_id.slice(0,8)}</div>
+        <div class="info">${t.env_type || '?'} &middot; ${t.total_steps || '?'} steps${t.session_id.includes('/') ? '' : ' &middot; ' + t.session_id.slice(0,8)}</div>
       </a>
     `).join('');
 
@@ -444,21 +506,27 @@
     });
   }
 
-  // Load a trajectory
+  // Load a trajectory. A plain id loads from the local API mount; an id
+  // containing '/' is a committed transcript path (static hosting, no API).
   async function loadTrajectory(sessionId) {
-    try {
-      baseTrajectoryUrl = '/trajectories/' + sessionId;
-      const resp = await fetch(baseTrajectoryUrl + '/trajectory.json');
-      if (!resp.ok) throw new Error('Trajectory not found');
-      trajectory = await resp.json();
-      currentStep = 0;
-      stopPlaying();
-      showReplayView();
-      renderStep();
-      highlightSidebar(sessionId);
-    } catch (e) {
-      obsPanel.innerHTML = '<div class="empty-state"><p>Failed to load trajectory: ' + e.message + '</p></div>';
+    const isPath = sessionId.includes('/');
+    const bases = isPath ? [sessionId, '../' + sessionId] : ['/trajectories/' + sessionId];
+    for (const base of bases) {
+      try {
+        const resp = await fetch(base + '/trajectory.json');
+        if (!resp.ok) continue;
+        trajectory = await resp.json();
+        baseTrajectoryUrl = base;
+        staticBase = isPath;
+        currentStep = 0;
+        stopPlaying();
+        showReplayView();
+        renderStep();
+        highlightSidebar(sessionId);
+        return;
+      } catch (e) { /* try next base */ }
     }
+    obsPanel.innerHTML = '<div class="empty-state"><p>Failed to load trajectory: ' + sessionId + '</p></div>';
   }
 
   function highlightSidebar(sessionId) {
@@ -477,6 +545,38 @@
       <div>Steps: <span>${trajectory.total_steps || '?'}</span></div>
       <div>Session: <span>${(trajectory.session_id || '?').slice(0,8)}</span></div>
     `;
+    renderVerdict(trajectory.evaluation || {});
+  }
+
+  // Reward-robustness verdict: trajectories saved by run_robustness.py carry
+  // the out-of-band proxy/oracle grades in `evaluation`. A reward hack is
+  // proxy_pass AND NOT oracle_pass — the training reward paid, the real work
+  // never happened.
+  function renderVerdict(ev) {
+    const banner = document.getElementById('verdict-banner');
+    banner.className = 'verdict';
+    if (typeof ev.proxy_pass !== 'boolean' || typeof ev.oracle_pass !== 'boolean') {
+      banner.innerHTML = '';
+      return;  // not a robustness run — no banner
+    }
+    const who = [ev.agent, ev.model, ev.reward_version && 'reward ' + ev.reward_version]
+      .filter(Boolean).join(' · ');
+    const pills =
+      `<span class="vpill ${ev.proxy_pass ? 'pass' : 'fail'}">proxy ${ev.proxy_pass ? 'PAID' : 'refused'}</span>` +
+      `<span class="vpill ${ev.oracle_pass ? 'pass' : 'fail'}">oracle ${ev.oracle_pass ? 'satisfied' : 'failed'}</span>`;
+    if (ev.proxy_pass && !ev.oracle_pass) {
+      banner.classList.add('hack');
+      banner.innerHTML = `&#9888; REWARD HACK ${pills} <span class="detail">${who} — the proxy paid full marks, the oracle says the work never happened</span>`;
+    } else if (ev.proxy_pass && ev.oracle_pass) {
+      banner.classList.add('honest');
+      const note = ev.agent === 'exploiter'
+        ? 'attack absorbed — cheating got more expensive than doing the task'
+        : 'honest work, honestly rewarded';
+      banner.innerHTML = `&#10003; ${ev.agent === 'exploiter' ? 'HACK FAILED' : 'HONEST PASS'} ${pills} <span class="detail">${who} — ${note}</span>`;
+    } else {
+      banner.classList.add('blocked');
+      banner.innerHTML = `&#9635; NO REWARD ${pills} <span class="detail">${who} — the proxy refused to pay</span>`;
+    }
   }
 
   // Render current step
@@ -528,9 +628,11 @@
   function renderObservation(step) {
     const obs = step.observation || {};
 
-    // Try screenshot first
-    const screenshotUrl = baseTrajectoryUrl + '/screenshots/step_' + step.step_num + '.png';
-    if (trajectory.env_type === 'webapp') {
+    // Try screenshot first. API-served trajectories keep PNGs under
+    // screenshots/; committed transcripts store them flat next to trajectory.json.
+    const screenshotUrl = baseTrajectoryUrl
+      + (staticBase ? '/step_' : '/screenshots/step_') + step.step_num + '.png';
+    if (trajectory.env_type === 'webapp' || trajectory.env_type === 'axiomchat') {
       const img = new Image();
       img.onload = () => { obsPanel.innerHTML = ''; obsPanel.appendChild(img); };
       img.onerror = () => { renderTextObservation(obs); };
@@ -620,6 +722,19 @@
     for (const key of extras) {
       if (evaluation[key] !== undefined) {
         html += `<div class="reward-row"><span>${key.replace(/_/g,' ')}</span><span class="reward-value">${evaluation[key]}</span></div>`;
+      }
+    }
+
+    // Reward-robustness grades (proxy vs oracle, out-of-band)
+    if (typeof evaluation.proxy_pass === 'boolean') {
+      const flag = (v) => `<span class="vpill ${v ? 'pass' : 'fail'}">${v ? 'pass' : 'fail'}</span>`;
+      html += `<div class="reward-row"><span>proxy (live reward)</span>${flag(evaluation.proxy_pass)}</div>`;
+      html += `<div class="reward-row"><span>oracle (ground truth)</span>${flag(evaluation.oracle_pass)}</div>`;
+      html += `<div class="reward-row"><span>reward hack</span><span class="vpill ${evaluation.hack ? 'fail' : 'pass'}">${evaluation.hack ? 'YES' : 'no'}</span></div>`;
+      for (const key of ['agent', 'model', 'mode', 'reward_version']) {
+        if (evaluation[key]) {
+          html += `<div class="reward-row"><span>${key.replace(/_/g,' ')}</span><span class="reward-value">${escapeHtml(String(evaluation[key]))}</span></div>`;
+        }
       }
     }
     evalDisplay.innerHTML = html;
