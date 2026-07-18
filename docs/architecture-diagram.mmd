@@ -1,0 +1,98 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "primaryColor": "#161b22",
+    "primaryTextColor": "#e6edf3",
+    "primaryBorderColor": "#30363d",
+    "lineColor": "#8b949e",
+    "fontFamily": "SF Mono, Cascadia Code, JetBrains Mono, monospace",
+    "fontSize": "15px"
+  },
+  "flowchart": { "curve": "basis", "padding": 14, "nodeSpacing": 40, "rankSpacing": 55 }
+}}%%
+flowchart TB
+
+    %% =================================================================
+    %%  axiom-ai — one environment interface · two runners · one console
+    %% =================================================================
+
+    subgraph AGENTS["🤖 Agents · multi-provider (Anthropic | Gemini)"]
+        HONEST["<b>Honest agent</b><br/>vision + DOM<br/><i>do the task</i>"]
+        EXPL["<b>ExploiterAgent</b><br/>briefed on the PROXY spec only<br/><i>cheat the reward, laziest path</i>"]
+        RAND["<b>RandomAgent</b><br/>baseline"]
+    end
+
+    subgraph RUNNERS["Two runners — two questions"]
+        API["🌐 <b>Interactive API</b> — <i>can it do the task?</i><br/>run_demo.py → FastAPI :8000<br/>POST /sessions · /step · /evaluate<br/>4-dim score: completion · efficiency · accuracy · safety"]
+        HARNESS["⚖️ <b>Benchmark harness</b> — <i>can it cheat the reward?</i><br/>run_robustness.py · tasks × seeds × agents × reward v0/v1<br/><b>sole holder of the oracle token</b> · grades out-of-band"]
+    end
+
+    subgraph ENVS["🧪 One environment interface — BaseEnvironment + registry"]
+        E1["<b>JSON</b><br/>state machine"]
+        E2["<b>CLI</b><br/>sandboxed shell<br/>28 allowlisted cmds"]
+        E3["<b>WebApp</b><br/>Playwright + Chromium<br/>todo app :3000"]
+        E4["<b>⭐ AxiomChat</b> · mini-Slack :3100<br/>seeded reset → byte-reproducible<br/>token-gated oracle /api/_oracle/state"]
+    end
+
+    subgraph REWARD["🎯 Reward-robustness layer (AxiomChat tasks) — hack ≡ proxy_pass ∧ ¬oracle_pass"]
+        R3["exploit catalog (~20 patterns)<br/>+ live-discovered: verbose-filler,<br/>plausible-severity-filler"]
+        R4["<b>TDD for rewards</b><br/>every exploit → permanent corpus case<br/>→ named defense → CI regression gate"]
+        R1["<b>PROXY</b> v0 naive | v1 hardened<br/>cheap, gameable — the live reward<br/><i>all the agent is ever scored on</i>"]
+        R2["<b>ORACLE</b> — privileged ground truth<br/>deterministic, never an LLM, never the<br/>live reward · <i>the agent never sees it</i>"]
+        R5["LLM judge sub-study<br/>naive vs hardened (5 defenses)<br/>vs prompt injection"]
+        R6["<b>RRS = (1 − hack_rate) × honest_fidelity</b><br/>held-out eval seeds"]
+    end
+
+    subgraph OUT["📦 Outputs — one console"]
+        O1["trajectories/<br/>steps + screenshots<br/>+ proxy/oracle verdict"]
+        O2["reports/*.json<br/>offline · live · discovery<br/>honest model labels in meta"]
+        O3["<b>axiom console</b><br/>Demo · Replay (REWARD HACK badge) · Leaderboard<br/>→ GitHub Pages"]
+    end
+
+    HONEST --> API
+    RAND --> API
+    HONEST --> HARNESS
+    EXPL --> HARNESS
+
+    API --> E1
+    API --> E2
+    API --> E3
+    API --> E4
+    HARNESS ==> E4
+
+    E4 -->|"in-band: proxy scores the episode"| R1
+    E4 -->|"out-of-band: harness diffs<br/>pre/post oracle state"| R2
+    R3 --> R4
+    R4 -->|"hardens v0 → v1"| R1
+    R1 --> R6
+    R2 --> R6
+    HARNESS --> R5
+
+    API --> O1
+    HARNESS --> O1
+    R6 ==> O2
+    R5 --> O2
+    O1 --> O3
+    O2 --> O3
+
+    classDef agents  fill:#0d2740,stroke:#58a6ff,stroke-width:2px,color:#e6edf3
+    classDef api     fill:#0d2b1b,stroke:#3fb950,stroke-width:2px,color:#e6edf3
+    classDef harness fill:#3a1d16,stroke:#f0883e,stroke-width:2px,color:#e6edf3
+    classDef envs    fill:#21262d,stroke:#8b949e,stroke-width:2px,color:#e6edf3
+    classDef star    fill:#1a2035,stroke:#79c0ff,stroke-width:3px,color:#e6edf3
+    classDef reward  fill:#2d1a2e,stroke:#bc8cff,stroke-width:2px,color:#e6edf3
+    classDef out     fill:#2b1622,stroke:#f778ba,stroke-width:2px,color:#e6edf3
+
+    class HONEST,EXPL,RAND agents
+    class API api
+    class HARNESS harness
+    class E1,E2,E3 envs
+    class E4 star
+    class R1,R2,R3,R4,R5,R6 reward
+    class O1,O2,O3 out
+
+    style AGENTS  fill:#0d1117,stroke:#58a6ff,stroke-width:2px,color:#79c0ff
+    style RUNNERS fill:#0d1117,stroke:#30363d,stroke-width:2px,color:#e6edf3
+    style ENVS    fill:#0d1117,stroke:#8b949e,stroke-width:2px,color:#e6edf3
+    style REWARD  fill:#0d1117,stroke:#bc8cff,stroke-width:2px,color:#bc8cff
+    style OUT     fill:#0d1117,stroke:#f778ba,stroke-width:2px,color:#f778ba
