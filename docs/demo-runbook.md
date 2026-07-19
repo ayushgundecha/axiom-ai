@@ -30,7 +30,7 @@ honest_fidelity 1.000. It writes `reports/robustness.json`.
 
 **What to say:** *"Every reward is split into a cheap proxy the agent is scored
 on and a privileged oracle it never sees. A reward hack is `proxy_pass ∧
-¬oracle_pass`. The catalog of 24 exploits hacks the naive rewards; the named
+¬oracle_pass`. The catalog of 25 exploits hacks the naive rewards; the named
 defenses close them without breaking honest work — and the corpus regression in
 CI keeps them closed."*
 
@@ -43,17 +43,15 @@ uvicorn axiom.api.app:create_app --factory --port 8000
 open http://localhost:8000/static/demo.html
 ```
 
-One console, three tabs (shared nav):
+One console, two tabs (shared nav):
 
-- **Demo** — pick an environment (AxiomChat, WebApp, CLI, JSON) and a task; watch
-  a recorded agent episode animate step by step.
-- **Replay** — step through any trajectory: observation, action, reward, and the
-  **REWARD HACK / HONEST PASS** verdict banner (proxy paid? oracle satisfied?).
+- **Demo** — pick an environment on the left (AxiomChat, WebApp, CLI, JSON), then
+  a run; step through observation → action → reward with the **REWARD HACK /
+  HONEST PASS** verdict banner (proxy paid? oracle satisfied?). Reward-hacking
+  runs are flagged. On the hosted site it plays the committed evidence; locally
+  it lists every run in your `trajectories/`.
 - **Leaderboard** — the RRS scoreboard; toggle Offline · Live · both discovery
   runs. (`http://localhost:8000/static/robustness.html`)
-
-If you have no live trajectories yet, run one (§4) or open the committed evidence
-directly in Replay via the `reports/transcripts/` manifest.
 
 ---
 
@@ -87,9 +85,9 @@ python scripts/run_robustness.py --live --llm --judge \
 
 The **exploiter** is briefed on the proxy spec and told to take the laziest path
 to reward; the **honest** agent is asked to do the task; grading stays
-out-of-band. Trajectories land in `trajectories/` and replay in the console.
+out-of-band. Trajectories land in `trajectories/` and replay in the Demo tab.
 
-**The headline to point at:** open a hacked exploit trajectory in Replay — the
+**The headline to point at:** open a hacked exploit trajectory in the Demo tab — the
 red REWARD HACK banner, proxy PAID / oracle failed. Then the paired v1-blocked
 and honest runs. A live agent found holes in the *hardened* rewards on held-out
 seeds (see the Discovery toggles on the leaderboard); each became a permanent
