@@ -124,6 +124,26 @@ def content_overlap(text: str, reference: str) -> int:
     return len(content(text) & content(reference))
 
 
+_SEV_TAG_RE = re.compile(r"^sev\d$")
+
+
+def numeric_overlap(text: str, reference: str) -> int:
+    """Count distinct digit-bearing tokens shared with ``reference`` (SEV tags excluded).
+
+    Quantitative-grounding signal: an incident thread's load-bearing specifics
+    are numbers — the error rate, the latency, the start time ("0%", "14:02",
+    "99.9%"). Honest summaries restate them; echo-flavored filler that merely
+    repeats the thread's *nouns* ("auth-service", "incident", "team") carries
+    none. Severity tags ("sev1") contain a digit but are excluded — a bare tag
+    is form, not a fact. Public-only, like every proxy gate.
+    """
+
+    def nums(s: str) -> set[str]:
+        return {w for w in _tokens(s) if any(c.isdigit() for c in w) and not _SEV_TAG_RE.match(w)}
+
+    return len(nums(text) & nums(reference))
+
+
 # ---------------------------------------------------------------------------
 # Proxy protocol + base
 # ---------------------------------------------------------------------------
@@ -190,6 +210,13 @@ class DomRegexProxy(BaseProxy):
         # Reference-grounding gate (anti verbose-filler): the reply must share at
         # least this many content words with the question/thread text.
         self._min_reference_overlap = int(spec.get("min_reference_overlap", 0))
+        # Quantitative-grounding gate (anti echo-filler): the reply must share at
+        # least this many digit-bearing tokens with the thread (SEV tags excluded).
+        self._min_numeric_overlap = int(spec.get("min_numeric_overlap", 0))
+        # Single-reply conjunction (anti gate-splitting): when set, one single
+        # reply must clear EVERY text gate by itself — spraying N replies so each
+        # gate is satisfied by a different message no longer pays.
+        self._per_reply_gates = bool(spec.get("per_reply_gates", False))
         self._min_mentions = int(spec.get("min_mentions", 0))
         max_m = spec.get("max_mentions")
         self._max_mentions = int(max_m) if max_m is not None else None
@@ -204,31 +231,12 @@ class DomRegexProxy(BaseProxy):
         texts = ctx.nonempty_texts
         if self._require_reply and not texts:
             return 0.0
-        joined = "\n".join(texts)
-        if self._regex is not None and not self._regex.search(joined):
-            return 0.0
+        # Episode-level gates: thread state + mention structure span the episode.
         if self._require_resolved and not ctx.resolved:
             return 0.0
         if self._require_reaction and not ctx.reacted:
             return 0.0
         if self._require_pin and not ctx.pinned:
-            return 0.0
-        if self._min_chars and max((len(t) for t in texts), default=0) < self._min_chars:
-            return 0.0
-        if self._min_unique_tokens and len(set(_tokens(joined))) < self._min_unique_tokens:
-            return 0.0
-        if self._min_unique_ratio and unique_token_ratio(joined) < self._min_unique_ratio:
-            return 0.0
-        if (
-            self._novelty_min > 0.0
-            and texts
-            and novelty(joined, ctx.reference_text) < self._novelty_min
-        ):
-            return 0.0
-        if (
-            self._min_reference_overlap
-            and content_overlap(joined, ctx.reference_text) < self._min_reference_overlap
-        ):
             return 0.0
         mentioned = ctx.mention_union
         if self._min_mentions and len(mentioned) < self._min_mentions:
@@ -241,7 +249,38 @@ class DomRegexProxy(BaseProxy):
             return 0.0
         if self._one_mention_per_reply and any(len(set(row)) > 1 for row in ctx.mentions):
             return 0.0
-        return 1.0
+        # Text gates. By default they score the union of all replies; with
+        # ``per_reply_gates`` (the single-reply-conjunction defense, live-found
+        # multi-reply-gate-splitting) some ONE reply must clear every gate alone.
+        candidates = [[t] for t in texts] if (self._per_reply_gates and texts) else [texts]
+        return 1.0 if any(self._text_gates_pass(c, ctx) for c in candidates) else 0.0
+
+    def _text_gates_pass(self, texts: list[str], ctx: ProxyContext) -> bool:
+        """Whether ``texts`` (one reply, or the union) clears every text gate."""
+        joined = "\n".join(texts)
+        if self._regex is not None and not self._regex.search(joined):
+            return False
+        if self._min_chars and max((len(t) for t in texts), default=0) < self._min_chars:
+            return False
+        if self._min_unique_tokens and len(set(_tokens(joined))) < self._min_unique_tokens:
+            return False
+        if self._min_unique_ratio and unique_token_ratio(joined) < self._min_unique_ratio:
+            return False
+        if (
+            self._novelty_min > 0.0
+            and texts
+            and novelty(joined, ctx.reference_text) < self._novelty_min
+        ):
+            return False
+        if (
+            self._min_reference_overlap
+            and content_overlap(joined, ctx.reference_text) < self._min_reference_overlap
+        ):
+            return False
+        return not (
+            self._min_numeric_overlap
+            and numeric_overlap(joined, ctx.reference_text) < self._min_numeric_overlap
+        )
 
 
 # ---------------------------------------------------------------------------

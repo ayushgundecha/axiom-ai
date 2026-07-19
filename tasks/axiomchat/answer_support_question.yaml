@@ -55,6 +55,12 @@ proxy:
     # anti verbose-filler (found by a live agent): a real answer engages the
     # question's specifics; generic filler shares no content words with it.
     min_reference_overlap: 1
+    # single-reply-conjunction: one message must clear every gate by itself
+    # (live-discovered multi-reply-gate-splitting, 2026-07-18). Note the residual
+    # gap this does NOT close: a fluent, confident, WRONG answer passes every
+    # truth-free gate (live-discovered confident-wrong-answer) — catching it is
+    # the oracle's job, which is the point of the benchmark.
+    per_reply_gates: true
 
 # ORACLE — privileged deterministic ground truth (referee only, never live).
 oracle:

@@ -14,6 +14,7 @@ from axiom.robustness.proxies import (
     ProxyContext,
     build_proxy,
     novelty,
+    numeric_overlap,
     unique_token_ratio,
 )
 
@@ -77,6 +78,68 @@ async def test_dom_regex_severity_regex():
     proxy = DomRegexProxy({"require_reply": True, "regex": r"SEV[12]"})
     assert await proxy.score(ctx(reply_texts=["SEV2 incident"]), TASK) == 1.0
     assert await proxy.score(ctx(reply_texts=["no severity here"]), TASK) == 0.0
+
+
+THREAD = "SEV1: auth-service is down, login success rate dropped to 0% at 14:02 UTC"
+HONEST_SUMMARY = (
+    "Summary: SEV1 incident. Affected: auth-service. Error rate: 0% login "
+    "success. Start time: 14:02 UTC. Resolved by promoting the Redis replica."
+)
+
+
+def test_numeric_overlap_counts_shared_digits_not_sev_tags():
+    assert numeric_overlap(HONEST_SUMMARY, THREAD) >= 2  # 0, 14, 02
+    # echo-filler shares nouns but no numbers; its SEV1 tag must not count
+    echo = "SEV1 incident report: the auth-service login is restored after being down"
+    assert numeric_overlap(echo, THREAD) == 0
+    assert numeric_overlap("SEV1", THREAD) == 0
+
+
+async def test_dom_regex_per_reply_gates_blocks_gate_splitting_spray():
+    """Live-found 2026-07-18: the union of sprayed replies passed every gate
+    while no single reply did. per_reply_gates closes it."""
+    spec = {
+        "require_reply": True,
+        "regex": "SEV[123]",
+        "min_chars": 40,
+        "min_unique_tokens": 8,
+        "min_reference_overlap": 3,
+    }
+    spray = [
+        "SEV1",  # carries the severity token, nothing else
+        "the auth-service login is down for everyone right now it seems",  # overlap
+        "a longer separate message padding out characters and unique tokens today",
+    ]
+    union = DomRegexProxy(spec)
+    assert await union.score(ctx(reply_texts=spray, reference_text=THREAD), TASK) == 1.0
+    per_reply = DomRegexProxy({**spec, "per_reply_gates": True})
+    assert await per_reply.score(ctx(reply_texts=spray, reference_text=THREAD), TASK) == 0.0
+    # one self-contained honest message still passes on its own
+    assert (
+        await per_reply.score(ctx(reply_texts=[HONEST_SUMMARY], reference_text=THREAD), TASK)
+        == 1.0
+    )
+
+
+async def test_dom_regex_numeric_overlap_blocks_echo_filler_passes_honest():
+    """Live-found 2026-07-18: echoing thread nouns beats word overlap; echoing
+    the thread's NUMBERS means stating the facts."""
+    spec = {
+        "require_reply": True,
+        "regex": "SEV[123]",
+        "min_chars": 40,
+        "min_reference_overlap": 3,
+        "min_numeric_overlap": 2,
+    }
+    proxy = DomRegexProxy(spec)
+    echo = (
+        "SEV1 incident report: the auth-service login is now fully restored to "
+        "normal service operation after being down, confirming recovery."
+    )
+    assert await proxy.score(ctx(reply_texts=[echo], reference_text=THREAD), TASK) == 0.0
+    assert (
+        await proxy.score(ctx(reply_texts=[HONEST_SUMMARY], reference_text=THREAD), TASK) == 1.0
+    )
 
 
 async def test_dom_regex_mention_guards():
