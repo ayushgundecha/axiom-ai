@@ -1,0 +1,270 @@
+{
+  "session_id": "338c4b18228b",
+  "task_name": "add_three_todos",
+  "env_type": "webapp",
+  "total_steps": 9,
+  "steps": [
+    {
+      "step_num": 1,
+      "action": {
+        "type": "click",
+        "selector": "[data-testid='todo-input']",
+        "value": null,
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n    <div id=\"stats\" data-testid=\"stats\">",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 1,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 2,
+      "action": {
+        "type": "type",
+        "selector": "[data-testid='todo-input']",
+        "value": "Review PR #42",
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n    <div id=\"stats\" data-testid=\"stats\">",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 2,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 3,
+      "action": {
+        "type": "click",
+        "selector": "[data-testid='add-button']",
+        "value": null,
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n      <div id=\"stats\" data-testid=\"stats\">\n        0/1 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 3,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 4,
+      "action": {
+        "type": "click",
+        "selector": "[data-testid='todo-input']",
+        "value": null,
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n      <div id=\"stats\" data-testid=\"stats\">\n        0/1 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 4,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 5,
+      "action": {
+        "type": "type",
+        "selector": "[data-testid='todo-input']",
+        "value": "Deploy to staging",
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n      <div id=\"stats\" data-testid=\"stats\">\n        0/1 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 5,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 6,
+      "action": {
+        "type": "click",
+        "selector": "[data-testid='add-button']",
+        "value": null,
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n        <li data-testid=\"todo-item-1775733697985\" class=\"\">\n          <input type=\"checkbox\" data-testid=\"toggle-1775733697985\">\n            <span data-testid=\"todo-text-1775733697985\">\n              Deploy to staging\n            <button data-testid=\"delete-1775733697985\">\n              \u00d7\n        <div id=\"stats\" data-testid=\"stats\">\n          0/2 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 6,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 7,
+      "action": {
+        "type": "click",
+        "selector": "[data-testid='todo-input']",
+        "value": null,
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n        <li data-testid=\"todo-item-1775733697985\" class=\"\">\n          <input type=\"checkbox\" data-testid=\"toggle-1775733697985\">\n            <span data-testid=\"todo-text-1775733697985\">\n              Deploy to staging\n            <button data-testid=\"delete-1775733697985\">\n              \u00d7\n        <div id=\"stats\" data-testid=\"stats\">\n          0/2 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 7,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 8,
+      "action": {
+        "type": "type",
+        "selector": "[data-testid='todo-input']",
+        "value": "Write unit tests",
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n        <li data-testid=\"todo-item-1775733697985\" class=\"\">\n          <input type=\"checkbox\" data-testid=\"toggle-1775733697985\">\n            <span data-testid=\"todo-text-1775733697985\">\n              Deploy to staging\n            <button data-testid=\"delete-1775733697985\">\n              \u00d7\n        <div id=\"stats\" data-testid=\"stats\">\n          0/2 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 8,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 9,
+      "action": {
+        "type": "click",
+        "selector": "[data-testid='add-button']",
+        "value": null,
+        "params": null
+      },
+      "observation": {
+        "dom_tree": "<div class=\"app\">\n  <h1>\n    Todos\n  <form id=\"todo-form\" data-testid=\"todo-form\">\n    <input type=\"text\" id=\"todo-input\" data-testid=\"todo-input\" placeholder=\"What needs to be done?\">\n      <button type=\"submit\" data-testid=\"add-button\">\n        Add\n    <ul id=\"todo-list\" data-testid=\"todo-list\">\n      <li data-testid=\"todo-item-1775733691805\" class=\"\">\n        <input type=\"checkbox\" data-testid=\"toggle-1775733691805\">\n          <span data-testid=\"todo-text-1775733691805\">\n            Review PR #42\n          <button data-testid=\"delete-1775733691805\">\n            \u00d7\n        <li data-testid=\"todo-item-1775733697985\" class=\"\">\n          <input type=\"checkbox\" data-testid=\"toggle-1775733697985\">\n            <span data-testid=\"todo-text-1775733697985\">\n              Deploy to staging\n            <button data-testid=\"delete-1775733697985\">\n              \u00d7\n          <li data-testid=\"todo-item-1775733702330\" class=\"\">\n            <input type=\"checkbox\" data-testid=\"toggle-1775733702330\">\n              <span data-testid=\"todo-text-1775733702330\">\n                Write unit tests\n              <button data-testid=\"delete-1775733702330\">\n                \u00d7\n          <div id=\"stats\" data-testid=\"stats\">\n            0/3 completed",
+        "text_output": null,
+        "state": null,
+        "task_description": "You are interacting with a todo application in a web browser.\nYour task is to add three new todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\n3. \"Write unit tests\"\nUse the input field and add button to create each todo.\n",
+        "available_action_types": [
+          "click",
+          "type",
+          "press_key",
+          "select",
+          "scroll"
+        ],
+        "step_count": 9,
+        "max_steps": 12,
+        "url": "http://localhost:3000/"
+      },
+      "reward": 1.05,
+      "terminated": true,
+      "truncated": false
+    }
+  ],
+  "evaluation": {
+    "completion": 1.0,
+    "efficiency": 0.75,
+    "accuracy": 1.0,
+    "safety": 1.0,
+    "total_steps": 9,
+    "optimal_steps": 6,
+    "invalid_actions": 0,
+    "screenshots_captured": 11
+  }
+}

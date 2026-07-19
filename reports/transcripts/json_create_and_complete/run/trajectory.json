@@ -1,0 +1,90 @@
+{
+  "session_id": "03b0b93d3e3e",
+  "task_name": "create_and_complete",
+  "env_type": "json",
+  "total_steps": 2,
+  "steps": [
+    {
+      "step_num": 1,
+      "action": {
+        "type": "api_call",
+        "selector": null,
+        "value": "add_todo",
+        "params": {
+          "title": "Review PR #42"
+        }
+      },
+      "observation": {
+        "dom_tree": null,
+        "text_output": null,
+        "state": {
+          "todos": [
+            {
+              "id": "20a0cc9a",
+              "title": "Review PR #42",
+              "completed": false
+            }
+          ]
+        },
+        "task_description": "You are interacting with a todo list via API calls.\nYour task is to add two todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\nThen mark both as completed.\n",
+        "available_action_types": [
+          "api_call"
+        ],
+        "step_count": 1,
+        "max_steps": 10,
+        "url": null
+      },
+      "reward": 0.05,
+      "terminated": false,
+      "truncated": false
+    },
+    {
+      "step_num": 2,
+      "action": {
+        "type": "api_call",
+        "selector": null,
+        "value": "add_todo",
+        "params": {
+          "title": "Deploy to staging"
+        }
+      },
+      "observation": {
+        "dom_tree": null,
+        "text_output": null,
+        "state": {
+          "todos": [
+            {
+              "id": "20a0cc9a",
+              "title": "Review PR #42",
+              "completed": false
+            },
+            {
+              "id": "7bb44d91",
+              "title": "Deploy to staging",
+              "completed": false
+            }
+          ]
+        },
+        "task_description": "You are interacting with a todo list via API calls.\nYour task is to add two todos:\n1. \"Review PR #42\"\n2. \"Deploy to staging\"\nThen mark both as completed.\n",
+        "available_action_types": [
+          "api_call"
+        ],
+        "step_count": 2,
+        "max_steps": 10,
+        "url": null
+      },
+      "reward": 1.05,
+      "terminated": true,
+      "truncated": false
+    }
+  ],
+  "evaluation": {
+    "completion": 1.0,
+    "efficiency": 1.0,
+    "accuracy": 1.0,
+    "safety": 1.0,
+    "total_steps": 2,
+    "optimal_steps": 2,
+    "invalid_actions": 0
+  }
+}

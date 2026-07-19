@@ -142,8 +142,7 @@ A robust reward has `RRS → 1`: it can't be cheated **and** it still pays hones
 
 Everything the agent does is recorded in one trajectory format and surfaced in one hosted console — [**ayushgundecha.github.io/axiom-ai**](https://ayushgundecha.github.io/axiom-ai/):
 
-- **Demo** — watch a recorded agent episode play out, step by step, in any of the four environments.
-- **Replay** — step through any trajectory: observation, action, reward, and the **REWARD HACK / HONEST PASS** verdict banner (proxy paid? oracle satisfied?). The committed exploit evidence replays right on the hosted page.
+- **Demo** — pick an environment on the left (AxiomChat, WebApp, CLI, JSON), then a run, and step through exactly what the agent saw, did, and was scored — with the **REWARD HACK / HONEST PASS** verdict banner (proxy paid? oracle satisfied?). Every run replays right on the hosted page; reward-hacking runs are flagged.
 - **Leaderboard** — the RRS scoreboard, with a toggle for Offline · Live · both discovery runs and honest model labels.
 
 ---
@@ -187,7 +186,7 @@ python scripts/run_robustness.py --train-seeds 1 2 3 --eval-seeds 4 5 6 --judge
 
 ```bash
 uvicorn axiom.api.app:create_app --factory --port 8000
-open http://localhost:8000/static/demo.html      # Demo · Replay · Leaderboard
+open http://localhost:8000/static/demo.html      # Demo · Leaderboard
 ```
 
 **Run a live agent episode** (needs an Anthropic *or* free-tier Gemini key in `.env`; models are recorded in each report's `meta`):
@@ -235,7 +234,7 @@ apps/
   axiomchat/   React+Vite SPA + Express — seeded, oracle-gated mini-Slack
   todo-app/    TypeScript Express target app
 tasks/         json/ · webapp/ · cli/ · axiomchat/ (+ exploits/catalog.yaml)
-static/        demo.html · replay.html · robustness.html   (the Axiom Console)
+static/        demo.html · robustness.html   (the Axiom Console)
 scripts/       run_robustness.py · run_demo.py · parallel_benchmark.py
 reports/       robustness.json (offline) · robustness_live*.json · transcripts/
 ```

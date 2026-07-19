@@ -26,12 +26,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble console (leaderboard + replay + committed reports & transcripts)
+      - name: Assemble console (leaderboard + demo viewer + committed reports & transcripts)
         run: |
           mkdir -p site/reports
           cp static/robustness.html site/index.html
           cp static/robustness.html site/robustness.html
-          cp static/replay.html site/replay.html
           cp static/demo.html site/demo.html
           cp reports/*.json site/reports/
           cp -R reports/transcripts site/reports/transcripts

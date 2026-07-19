@@ -69,7 +69,7 @@ tasks/                  # YAML task definitions (json/, webapp/, axiomchat/, cli
 scripts/
   run_robustness.py     # the benchmark harness (offline sim | live browser | live LLM); holds the oracle token
   run_demo.py           # single-agent episode via the HTTP API
-static/                 # the Axiom Console -- demo.html - replay.html - robustness.html (shared theme + nav)
+static/                 # the Axiom Console -- demo.html - robustness.html (shared theme + nav)
 reports/                # robustness.json (offline) + robustness_live*.json + transcripts/ (curated evidence)
 trajectories/           # Saved trajectories + screenshots (never committed; curated copies live in reports/transcripts/)
 ```
@@ -80,7 +80,7 @@ trajectories/           # Saved trajectories + screenshots (never committed; cur
 answers "can the agent cheat the reward?" (proxy vs oracle out-of-band -> RRS). The harness
 holds `X-Oracle-Token` and grades from the oracle-state diff AFTER each episode -- it is never
 in the serving path, so the agent can never reach ground truth. The **Axiom Console** (static
-pages on GitHub Pages) reads the shared trajectory + report outputs: Demo, Replay (with the
+pages on GitHub Pages) reads the shared trajectory + report outputs: Demo (env-grouped step viewer with the
 REWARD HACK verdict banner), Leaderboard.
 
 ## Code Style & Standards

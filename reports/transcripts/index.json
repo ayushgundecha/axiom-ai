@@ -58,5 +58,35 @@
     "agent": "exploiter",
     "model": "gemini-3.1-flash-lite",
     "hack": true
+  },
+  {
+    "path": "reports/transcripts/webapp_add_three_todos/run",
+    "task_name": "add_three_todos",
+    "env_type": "webapp",
+    "total_steps": 9,
+    "label": "webapp \u00b7 add_three_todos \u2014 honest (9 steps, screenshots)",
+    "agent": null,
+    "model": null,
+    "hack": null
+  },
+  {
+    "path": "reports/transcripts/cli_analyze_logs/run",
+    "task_name": "analyze_logs",
+    "env_type": "cli",
+    "total_steps": 15,
+    "label": "cli \u00b7 analyze_logs \u2014 count + extract errors (15 steps)",
+    "agent": null,
+    "model": null,
+    "hack": null
+  },
+  {
+    "path": "reports/transcripts/json_create_and_complete/run",
+    "task_name": "create_and_complete",
+    "env_type": "json",
+    "total_steps": 2,
+    "label": "json \u00b7 create_and_complete \u2014 state machine (2 steps)",
+    "agent": null,
+    "model": null,
+    "hack": null
   }
 ]
