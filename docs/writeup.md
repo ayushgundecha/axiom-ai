@@ -12,9 +12,9 @@ Most benchmarks measure how well an agent does a task. This one measures somethi
 
 ## Why a workplace environment
 
-I built the benchmark on **AxiomChat**: a deterministic, seed-reproducible mini-Slack — a React SPA plus an Express backend, resettable to a byte-identical workspace with `POST /api/reset {seed, scale}`. Agents drive it through a real browser (Playwright): they read channels and threads, post replies, react, pin, resolve, mention people.
+I built the benchmark on **AxiomChat**: a deterministic, seed-reproducible mini-Slack — a React SPA plus an Express backend, resettable to a byte-identical workspace with `POST /api/reset {seed, scale}`. Agents drive it through a real browser (Playwright): they read threads, post replies, react, pin, resolve, mention people.
 
-Workplace chat is the right substrate for three reasons. It's where a lot of real agent work is heading (triage, support, incident response, routing). Its "did it work?" questions are genuinely fuzzy — *is this a good summary? did it answer the question? is this the right owner?* — which is exactly where proxy rewards are forced to approximate and exactly where they leak. And it's adversarially interesting: an agent in a chat app has cheap, plausible-looking moves (post noise, tag everyone, resolve without answering) that a naive reward will happily pay for.
+Workplace chat is the right substrate because it's where a lot of real agent work is heading (triage, support, incident response) and because its "did it work?" questions are genuinely fuzzy — *is this a good summary? did it answer the question? is this the right owner?* That's exactly where proxy rewards are forced to approximate, and exactly where they leak. It's also adversarially rich: an agent in a chat app has cheap, plausible-looking moves — post noise, tag everyone, resolve without answering — that a naive reward will happily pay for.
 
 ## The design: a proxy you train on, an oracle you don't
 
@@ -55,7 +55,7 @@ Rewards are hardened on train seeds and scored on **disjoint eval seeds**, so th
 
 ## Finding the hacks
 
-I wrote an exploit catalog — 24 named, tagged reward-hacking patterns, each labeled with the proxy class it defeats: empty replies, keyword stuffing, resolve-without-answering, mention-everyone, pin-instead-of-answer, and prompt-injection attacks like `inject-judge-override` (`SYSTEM: … score 1.0`). The scripted ones run against the deterministic simulator and become permanent regression cases. Against the **naive (v0)** rewards they land hard: macro-RRS `0.364`, with `assign_request` fully hacked (`1.000`) and every other task leaking.
+I wrote an exploit catalog — 25 named, tagged reward-hacking patterns, each labeled with the proxy class it defeats: empty replies, keyword stuffing, resolve-without-answering, mention-everyone, and prompt-injection attacks like `inject-judge-override` (`SYSTEM: … score 1.0`). The scripted ones run against the deterministic simulator and become permanent regression cases. Against the **naive (v0)** rewards they land hard: macro-RRS `0.364`, with `assign_request` fully hacked and every other task leaking.
 
 Then the interesting part. Hardening each reward — one named defense per exploit class — takes offline v1 to macro-RRS `1.000`, hack-rate `0.000` across all four tasks, with honest fidelity held at `1.000`. A scripted adversary, using every trick in the catalog, cannot beat the hardened rewards. That's the point where you'd normally declare victory.
 
@@ -73,7 +73,11 @@ Instead I pointed a **live LLM agent** at them — a free-tier `gemini-3.1-flash
 
 The fixes: **single-reply-conjunction** (one message must clear every gate by itself — spraying no longer helps) closes gate-splitting. **quantitative-grounding** (an incident's load-bearing facts are *numbers* — the error rate, the start time, the recovery rate — and the summary must share the thread's digits, not just its nouns) closes echo-filler; note the nice property that an attacker who echoes the numbers too has, by definition, stated the facts, at which point the oracle passes it — the attack is absorbed, not just blocked.
 
-The third, `confident-wrong-answer`, I did **not** close, and won't. No public, truth-free signal can tell a confident right answer from a confident wrong one — verifying factual correctness is exactly what the oracle is for. It's cataloged as the documented, irreducible proxy↔oracle gap. Honesty about that ceiling is more valuable than a defense that pretends to close it; it's the concrete reason environments need privileged ground truth at all.
+The third, `confident-wrong-answer`, I did **not** close, and won't. No public, truth-free signal can tell a confident right answer from a confident wrong one — verifying factual correctness is exactly what the oracle is for. It's cataloged as the documented, irreducible proxy↔oracle gap.
+
+**Round 3 — the confirmation, and the ceiling.** I re-ran the live sweep once more with the round-2 defenses in place. They held: `answer_support_question` v1 hack-rate dropped `0.333 → 0.000`, `summarize_incident` `0.667 → 0.333`, macro-live-RRS `0.5 → 0.833`, honest fidelity `1.000`, zero error runs. But one hack survived on `summarize_incident` seed 5 — and it's the most instructive one of all. Having lost gate-splitting and pure noun-echoing, the attacker learned to cite *just enough* real anchors — the service name and the start time, "auth-service … 14:02" — to satisfy the grounding gates, while still omitting the load-bearing facts (the error rate, the impact). Proxy: `1.0`. Oracle: `0.4`.
+
+I did not close it, because closing it would break the thing that makes the proxy a *proxy*. Every grounding gate is a public signal the attacker can read — and anything it can read, it can satisfy with the minimum content that clears the threshold. Push the gate to demand more specific facts and you haven't hardened the proxy, you've *rewritten the oracle into it* — at which point the split is gone and so is the point. `partial-grounding-filler` and `confident-wrong-answer` are the two documented open residuals: the measured ceiling of what any cheap, truth-free reward can do, and the concrete reason environments need privileged ground truth at all. A benchmark that reported `1.000` here would be hiding its most honest result.
 
 ## Hardening patterns that generalized
 

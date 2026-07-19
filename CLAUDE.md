@@ -65,7 +65,7 @@ agents/                 # AI agents (interact via HTTP API or drive envs directl
 apps/todo-app/          # TypeScript Express todo app (Docker container)
 apps/axiomchat/         # AxiomChat: React+Vite+TS+Tailwind SPA + Express (seeded, token-gated oracle)
 tasks/                  # YAML task definitions (json/, webapp/, axiomchat/, cli/)
-  axiomchat/exploits/catalog.yaml   # named reward-hacking patterns (24; scripted ones become corpus cases)
+  axiomchat/exploits/catalog.yaml   # named reward-hacking patterns (25; scripted ones become corpus cases)
 scripts/
   run_robustness.py     # the benchmark harness (offline sim | live browser | live LLM); holds the oracle token
   run_demo.py           # single-agent episode via the HTTP API
