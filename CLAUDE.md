@@ -35,22 +35,53 @@ axiom/                  # Python package (the framework)
     webapp_env.py       # WebAppEnvironment (Playwright, screenshots, DOM) -- maps to OSWorld
     axiomchat_env.py    # AxiomChatEnvironment(WebAppEnvironment) -- the deterministic mini-Slack (4th env)
     cli_env.py          # CLIEnvironment (subprocess, sandboxed) -- maps to Terminal-Bench
+    __init__.py         # imports all four envs so registration side-effects fire
+  robustness/           # Reward Robustness Benchmark (the star deliverable)
+    proxies.py          # v0/v1 gameable PROXY rewards (DomRegex/Keyword/Count/Judge) -- what the agent is scored on
+    oracles.py          # deterministic ORACLE (privileged ground truth, referee only, never the live reward)
+    oracle_client.py    # fetch oracle state via X-Oracle-Token (harness-side ONLY)
+    hardening.py        # named-defense catalog ("TDD for rewards"); v1 = v0 + defenses_for_task
+    exploits/library.py # exploit action generators (incl. live-discovered ones)
+    corpus.py           # permanent regression corpus (exploit + honest cases); the CI no-false-negative gate
+    metrics.py          # RRS = (1 - hack_rate) * honest_fidelity; macro over tasks
+    judge_reward.py     # LLM-as-judge proxy + 5-defense hardened judge
+    judge_substudy.py   # naive-vs-hardened judge under prompt injection
+    simulator.py        # deterministic in-memory AxiomChat (offline mode, zero API keys)
+    labeler.py          # label an episode: proxy/oracle pass, hack, mode
+    report.py           # build_report (top-level meta: mode + model labels) + write_report
+    seeds.py            # held-out train/eval split helpers
   api/                  # FastAPI REST API
-    app.py              # Application factory + lifespan
+    app.py              # Application factory + lifespan (registers all four envs incl. axiomchat)
     schemas.py          # API-specific request/response models (separate from domain models)
     middleware.py       # Request ID, error handling
-    routes/             # Route modules (sessions, environments, tasks, health)
+    routes/             # Route modules (sessions, environments, tasks, trajectories, health)
   utils/                # Utilities
     dom_parser.py       # HTML -> simplified DOM tree (token-efficient for LLMs)
     screenshot.py       # Screenshot save/encode/resize
-agents/                 # AI agents (interact via HTTP API)
-  claude_agent.py       # Claude with vision (screenshots + DOM)
+agents/                 # AI agents (interact via HTTP API or drive envs directly)
+  claude_agent.py       # ClaudeAgent -- vision + DOM; multi-provider (Anthropic OR Gemini, routed by model id)
+  exploiter_agent.py    # ExploiterAgent -- briefed on the PROXY spec only, takes the laziest path to reward
   random_agent.py       # Random baseline
 apps/todo-app/          # TypeScript Express todo app (Docker container)
-apps/axiomchat/         # AxiomChat: React+Vite+TS+Tailwind SPA + Express (seeded, oracle-gated)
+apps/axiomchat/         # AxiomChat: React+Vite+TS+Tailwind SPA + Express (seeded, token-gated oracle)
 tasks/                  # YAML task definitions (json/, webapp/, axiomchat/, cli/)
-trajectories/           # Saved trajectories + screenshots
+  axiomchat/exploits/catalog.yaml   # named reward-hacking patterns (24; scripted ones become corpus cases)
+scripts/
+  run_robustness.py     # the benchmark harness (offline sim | live browser | live LLM); holds the oracle token
+  run_demo.py           # single-agent episode via the HTTP API
+static/                 # the Axiom Console -- demo.html - replay.html - robustness.html (shared theme + nav)
+reports/                # robustness.json (offline) + robustness_live*.json + transcripts/ (curated evidence)
+trajectories/           # Saved trajectories + screenshots (never committed; curated copies live in reports/transcripts/)
 ```
+
+**Two runners, one interface.** Every env implements `BaseEnvironment` + registry. The
+**interactive API** (`run_demo.py` -> FastAPI :8000) answers "can the agent do the task?"
+(4-dim evaluation). The **benchmark harness** (`run_robustness.py`, drives envs directly)
+answers "can the agent cheat the reward?" (proxy vs oracle out-of-band -> RRS). The harness
+holds `X-Oracle-Token` and grades from the oracle-state diff AFTER each episode -- it is never
+in the serving path, so the agent can never reach ground truth. The **Axiom Console** (static
+pages on GitHub Pages) reads the shared trajectory + report outputs: Demo, Replay (with the
+REWARD HACK verdict banner), Leaderboard.
 
 ## Code Style & Standards
 - Python 3.11+ (use modern syntax: `list[str]`, `dict[str, Any]`, `X | None`)
