@@ -3,75 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>axiom-ai | Reward Robustness Leaderboard</title>
+<title>Axiom Leaderboard — reward robustness</title>
+<meta name="description" content="Reward Robustness Leaderboard: RRS = (1 − hack_rate) × honest_fidelity across offline and live LLM benchmark runs.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c86ff'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230a0a0b'%3Ea%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg: #0d1117; --bg-card: #161b22; --bg-hover: #1c2128; --border: #30363d;
-    --text: #e6edf3; --text-muted: #8b949e; --accent: #58a6ff;
-    --green: #3fb950; --yellow: #d29922; --red: #f85149; --purple: #bc8cff;
-    --radius: 8px; --font: 'SF Mono','Cascadia Code','Fira Code','JetBrains Mono',monospace;
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 40px var(--space-page) 56px; }
+  h1 { font-size: 28px; font-weight: 650; letter-spacing: -.02em; }
+  /* Section headings are emitted by JS as bare <h2> */
+  h2 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 36px 0 14px; }
+  .sub { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  .sub b { font-weight: 600; }
+  code { font-family: var(--font-mono); background: var(--bg-inset); border: 1px solid var(--border); padding: 1px 7px; border-radius: 4px; font-size: 12px; }
+
+  /* Mode toggle — segmented control (buttons emitted by JS into #modes) */
+  .modes {
+    display: inline-flex; gap: 4px; margin-top: 24px; padding: 4px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); flex-wrap: wrap;
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); padding: 28px; line-height: 1.5; }
-  .wrap { max-width: 1040px; margin: 0 auto; }
-  h1 { font-size: 22px; }
-  h2 { font-size: 15px; color: var(--text-muted); margin: 28px 0 12px; text-transform: uppercase; letter-spacing: .08em; }
-  .sub { color: var(--text-muted); font-size: 13px; margin-top: 6px; }
-  .cards { display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
-  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; flex: 1; min-width: 200px; }
-  .card .label { color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-  .card .val { font-size: 30px; font-weight: 600; margin-top: 6px; }
+  .mode-btn {
+    font-family: var(--font-mono); font-size: 12px; padding: 6px 14px;
+    background: transparent; border: none; color: var(--text-secondary);
+    border-radius: var(--radius-sm); cursor: pointer; transition: all .15s ease;
+  }
+  .mode-btn:hover { color: var(--text); background: var(--bg-hover); }
+  .mode-btn.active { background: var(--accent-dim); color: var(--accent-bright); }
+
+  .meta-chips { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-family: var(--font-mono); font-size: 11px; padding: 4px 12px; line-height: 1.6;
+    border-radius: var(--radius-pill); border: 1px solid var(--border);
+    color: var(--text-muted); background: var(--bg-card);
+  }
+  .chip b { color: var(--text-secondary); font-weight: 550; }
+
+  /* Summary cards (theme.css .card carries the tile treatment) */
+  .cards { display: flex; gap: 14px; margin-top: 24px; flex-wrap: wrap; }
+  .card { padding: 22px 24px; flex: 1; min-width: 200px; }
+  .card .label {
+    font-family: var(--font-mono); color: var(--text-muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .08em; font-weight: 500;
+  }
+  .card .val { font-family: var(--font-mono); font-size: 38px; font-weight: 600; margin-top: 10px; line-height: 1.1; }
   .v0 { color: var(--red); } .v1 { color: var(--green); }
-  table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  th, td { text-align: right; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
-  th { color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
-  td:first-child, th:first-child { text-align: left; }
-  tr:last-child td { border-bottom: none; }
-  .tag { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
-  .tag.v0 { background: rgba(248,81,73,.15); }
-  .tag.v1 { background: rgba(63,185,80,.15); }
-  .bar { height: 7px; border-radius: 4px; background: var(--border); position: relative; min-width: 90px; display: inline-block; vertical-align: middle; }
-  .bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--green); }
-  .good { color: var(--green); } .bad { color: var(--red); }
-  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; }
-  .pill.yes { background: rgba(63,185,80,.15); color: var(--green); }
-  .pill.no { background: rgba(248,81,73,.15); color: var(--red); }
-  .err { color: var(--red); margin-top: 20px; }
-  .foot { color: var(--text-muted); font-size: 12px; margin-top: 28px; }
-  code { background: var(--bg-hover); padding: 1px 6px; border-radius: 4px; }
-  .modes { display: flex; gap: 8px; margin-top: 18px; }
-  .mode-btn { font-family: var(--font); font-size: 13px; padding: 7px 16px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--bg-card); color: var(--text-muted); cursor: pointer; }
-  .mode-btn:hover { background: var(--bg-hover); }
-  .mode-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.08); }
-  .meta-chips { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border);
-    color: var(--text-muted); background: var(--bg-card); }
-  .chip b { color: var(--text); font-weight: 600; }
-  /* Console nav (shared across demo / replay / leaderboard) */
-  .console-nav { display: flex; gap: 6px; margin-bottom: 14px; }
-  .console-nav a {
-    font-family: var(--font); font-size: 12px; text-decoration: none;
-    padding: 4px 12px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--bg-card);
-    color: var(--text-muted);
+
+  /* Tables (emitted bare into #content) */
+  #content { overflow-x: auto; }
+  table {
+    width: 100%; min-width: 640px; border-collapse: separate; border-spacing: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,.008)), var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
   }
-  .console-nav a:hover { background: var(--bg-hover); color: var(--text); }
-  .console-nav a.active {
-    border-color: var(--accent); color: var(--accent);
-    background: rgba(88,166,255,.08);
+  th, td { text-align: right; padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  td { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  td b { color: var(--text); }
+  th {
+    font-family: var(--font-mono); color: var(--text-muted); font-weight: 500;
+    text-transform: uppercase; letter-spacing: .07em; font-size: 10.5px;
+  }
+  td:first-child, th:first-child { text-align: left; }
+  td:first-child { color: var(--text); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background .12s ease; }
+  tbody tr:hover td { background: var(--bg-hover); }
+
+  .tag { font-family: var(--font-mono); padding: 1px 8px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 600; letter-spacing: .05em; }
+  .tag.v0 { background: var(--red-dim); }
+  .tag.v1 { background: var(--green-dim); }
+  .bar { height: 6px; border-radius: 3px; background: rgba(61,214,140,.12); position: relative; min-width: 90px; display: inline-block; vertical-align: middle; }
+  .bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--green); }
+  .good { color: var(--green); } .bad { color: var(--red); }
+  .pill { display: inline-block; font-family: var(--font-mono); padding: 2px 9px; border-radius: var(--radius-pill); font-size: 10.5px; font-weight: 600; letter-spacing: .04em; }
+  .pill.yes { background: var(--green-dim); color: var(--green); }
+  .pill.no { background: var(--red-dim); color: var(--red); }
+
+  .err {
+    color: var(--red); margin-top: 24px; padding: 16px 20px;
+    background: var(--red-dim); border: 1px solid rgba(242,85,90,.35);
+    border-radius: var(--radius); font-size: 13.5px; line-height: 1.7;
+  }
+  .foot { font-family: var(--font-mono); color: var(--text-muted); font-size: 11px; margin-top: 28px; line-height: 1.8; }
+
+  @media (max-width: 720px) {
+    .cards { flex-direction: column; }
+    h1 { font-size: 23px; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <nav class="console-nav">
+<header class="site-nav">
+  <a class="brand" href="index.html"><span class="mark">a</span>axiom <span class="suffix">console</span></a>
+  <nav>
+    <a href="index.html">Overview</a>
     <a href="demo.html">Demo</a>
     <a class="active" href="robustness.html">Leaderboard</a>
-    <a href="https://github.com/ayushgundecha/axiom-ai">GitHub</a>
+    <a href="https://github.com/ayushgundecha/axiom-ai">GitHub ↗</a>
   </nav>
-  <h1>⚖️ axiom console — Reward Robustness Leaderboard</h1>
-  <div class="sub">Real environments. Rewards you can't cheat. &nbsp;<code>RRS = (1 − hack_rate) × honest_fidelity</code></div>
+</header>
+<div class="wrap">
+  <h1>Reward Robustness Leaderboard</h1>
+  <div class="sub">higher RRS = harder to cheat &nbsp;·&nbsp; <code>RRS = (1 − hack_rate) × honest_fidelity</code></div>
 
   <div class="modes" id="modes"></div>
   <div class="meta-chips" id="meta"></div>

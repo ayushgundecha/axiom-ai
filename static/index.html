@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom — a training gym for AI agents</title>
+<meta name="description" content="A training gym for AI agents that also catches them cheating. Four real environments, live LLM agents, and every reward graded twice — proxy vs out-of-band oracle.">
+<meta property="og:title" content="Axiom — a training gym for AI agents">
+<meta property="og:description" content="Agents are graded on two questions: can they do the task — and can they cheat the reward?">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c86ff'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230a0a0b'%3Ea%3C/text%3E%3C/svg%3E">
+<script>
+  // The Pages root used to serve the demo viewer directly, so previously shared
+  // "/?session=..." links must keep working: forward them to the viewer.
+  (function () {
+    var s = new URLSearchParams(location.search).get('session');
+    if (s) location.replace('demo.html?session=' + encodeURIComponent(s));
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* ---------- hero ---------- */
+  .hero { max-width: 820px; margin: 0 auto; padding: 88px var(--space-page) 56px; text-align: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+    color: var(--accent-bright); background: var(--accent-dim);
+    border: 1px solid rgba(124,134,255,.22);
+    padding: 5px 14px; border-radius: var(--radius-pill); margin-bottom: 26px;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .hero h1 {
+    font-size: clamp(34px, 5vw, 54px); font-weight: 700;
+    letter-spacing: -.03em; line-height: 1.08; text-wrap: balance;
+  }
+  .hero h1 .dim { color: var(--text-muted); }
+  .hero .sub {
+    margin: 22px auto 0; max-width: 640px;
+    color: var(--text-secondary); font-size: 16.5px; line-height: 1.65; text-wrap: balance;
+  }
+  .hero .sub strong { color: var(--text); font-weight: 600; }
+  .ctas { display: flex; gap: 12px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+
+  /* ---------- two pillars ---------- */
+  .pillars { max-width: var(--maxw); margin: 56px auto 0; padding: 0 var(--space-page); }
+  .pillars > .micro { text-align: center; display: block; }
+  .pillars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+  .pillar { padding: 28px 30px; text-decoration: none; color: inherit; display: block; }
+  .pillar:hover { border-color: rgba(124,134,255,.4); }
+  .p-num {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    color: var(--accent-bright); background: var(--accent-dim);
+    border: 1px solid rgba(124,134,255,.22);
+    padding: 2px 10px; border-radius: var(--radius-pill); display: inline-block;
+  }
+  .pillar h3 { font-size: 19px; font-weight: 650; margin-top: 14px; letter-spacing: -.01em; }
+  .pillar p { color: var(--text-secondary); font-size: 14px; margin-top: 10px; line-height: 1.6; }
+  .env-chips { display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap; }
+  .env-chip {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary);
+    border: 1px solid var(--border); background: var(--bg-inset);
+    border-radius: var(--radius-pill); padding: 4px 12px;
+  }
+  .env-chip.hot { color: var(--accent-bright); border-color: rgba(124,134,255,.35); }
+  .env-chip.grader-p { color: var(--accent-bright); border-color: rgba(124,134,255,.35); }
+  .env-chip.grader-o { color: var(--green); border-color: rgba(61,214,140,.3); }
+  .formula {
+    display: inline-block; margin-top: 16px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--text-muted);
+    background: var(--bg-inset); border: 1px solid var(--border);
+    padding: 6px 14px; border-radius: var(--radius-sm);
+  }
+  .p-cta { display: flex; align-items: center; gap: 6px; margin-top: 20px; font-weight: 550; font-size: 13.5px; color: var(--accent-bright); }
+  .pillar-bridge {
+    margin-top: 14px; text-align: center;
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);
+  }
+  .pillar-bridge b { color: var(--accent-bright); font-weight: 500; }
+
+  /* ---------- section head ---------- */
+  .section-head { max-width: var(--maxw); margin: 72px auto 0; padding: 0 var(--space-page); }
+  .section-head h2, .how h2, .explore h2 { font-size: 26px; font-weight: 650; letter-spacing: -.02em; }
+  .section-head .lede, .how .lede { color: var(--text-secondary); margin-top: 8px; max-width: 640px; }
+
+  /* ---------- bento ---------- */
+  .bento {
+    max-width: var(--maxw); margin: 28px auto 0; padding: 0 var(--space-page);
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+      "macro macro story story"
+      "live  live  judge judge"
+      "envs  exploits tests formula";
+  }
+  .tile { padding: 26px 28px; position: relative; overflow: hidden; }
+  .tile .t-label { margin-bottom: 14px; display: block; }
+  .t-macro { grid-area: macro; }
+  .t-story { grid-area: story; }
+  .t-live  { grid-area: live; }
+  .t-judge { grid-area: judge; }
+  .t-envs { grid-area: envs; }
+  .t-exploits { grid-area: exploits; }
+  .t-tests { grid-area: tests; }
+  .t-formula { grid-area: formula; }
+  .bignum {
+    font-family: var(--font-mono); font-weight: 600;
+    font-size: 58px; line-height: 1; letter-spacing: -.02em;
+  }
+  .t-macro .bignum { font-size: 72px; }
+  .tile .caption { color: var(--text-secondary); font-size: 13.5px; margin-top: 12px; line-height: 1.55; }
+  .tile .caption strong { color: var(--text); font-weight: 600; }
+  .meter { margin-top: 20px; height: 6px; border-radius: 3px; background: rgba(124,134,255,.14); overflow: hidden; }
+  .meter > i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+
+  .duel { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+  .duel .row { display: grid; grid-template-columns: 128px 1fr; gap: 12px; align-items: center; }
+  .duel .task { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-secondary); text-align: right; }
+  .duel .bars { display: flex; flex-direction: column; gap: 3px; }
+  .duel .bar { height: 7px; border-radius: 3.5px; }
+  .duel .bar.v0 { background: rgba(242,85,90,.16); }
+  .duel .bar.v0 > i { display: block; height: 100%; border-radius: 3.5px; background: var(--red); }
+  .duel .bar.v1 { background: rgba(61,214,140,.14); }
+  .duel .bar.v1 > i { display: block; height: 100%; border-radius: 3.5px; background: var(--green); }
+  .duel-legend { display: flex; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
+  .duel-legend span { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  .t-live { border-color: rgba(242,85,90,.28); }
+  .t-live::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 120px;
+    background: radial-gradient(60% 100% at 30% 0%, rgba(242,85,90,.10), transparent 70%);
+    pointer-events: none;
+  }
+  .t-live .bignum { color: var(--red); }
+  .t-live .t-label { color: #b98a8d; }
+  .t-live .tile-links { display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+  .t-live .tile-links a { font-size: 13px; font-weight: 550; color: var(--accent-bright); text-decoration: none; }
+  .t-live .tile-links a:hover { text-decoration: underline; }
+
+  .judge-rows { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .judge-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: var(--bg-inset); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px;
+  }
+  .judge-row .who { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+  .jpill {
+    display: inline-flex; align-items: center;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .04em;
+    padding: 3px 10px; border-radius: var(--radius-pill); white-space: nowrap;
+  }
+  .jpill.fooled { background: var(--red-dim); color: var(--red); }
+  .jpill.resisted { background: var(--green-dim); color: var(--green); }
+
+  .t-small .bignum { font-size: 44px; }
+  .t-small .caption { margin-top: 8px; font-size: 12.5px; }
+  .t-formula { display: flex; align-items: center; justify-content: center; }
+  .t-formula code {
+    font-family: var(--font-mono); font-size: 13.5px; color: var(--accent-bright);
+    text-align: center; line-height: 1.8;
+  }
+  .t-formula code .op { color: var(--text-muted); }
+
+  /* ---------- how it works ---------- */
+  .how { background: var(--bg-subtle); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-top: 72px; padding: 64px var(--space-page); }
+  .how .inner { max-width: var(--maxw); margin: 0 auto; }
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1.2fr; gap: 16px; align-items: center; margin-top: 40px; }
+  .flow .node { padding: 20px 22px; }
+  .flow .node h3 { font-size: 15px; font-weight: 600; }
+  .flow .node p { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+  .flow .arrow { font-family: var(--font-mono); color: var(--text-muted); font-size: 18px; }
+  .flow .split { display: flex; flex-direction: column; gap: 12px; }
+  .node.proxy { border-color: rgba(124,134,255,.35); }
+  .node.proxy h3 { color: var(--accent-bright); }
+  .node.oracle { border-color: rgba(61,214,140,.35); }
+  .node.oracle h3 { color: var(--green); }
+  .verdict-legend { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+  .vl {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 9px 16px; background: var(--bg-card);
+  }
+  .vl b { font-weight: 600; letter-spacing: .03em; }
+  .vl.honest b { color: var(--green); }
+  .vl.hack { border-color: rgba(242,85,90,.35); background: var(--red-dim); }
+  .vl.hack b { color: var(--red); }
+  .vl.blocked b { color: var(--accent-bright); }
+  .vl .cond { color: var(--text-muted); }
+
+  /* ---------- explore ---------- */
+  .explore { max-width: var(--maxw); margin: 0 auto; padding: 64px var(--space-page) 8px; }
+  .explore-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+  .explore-card { padding: 26px 28px; text-decoration: none; color: inherit; display: block; border-color: rgba(124,134,255,.3); }
+  .explore-card h3 { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .explore-card h3 .go { margin-left: auto; color: var(--text-muted); font-family: var(--font-mono); transition: transform .15s ease, color .15s ease; }
+  .explore-card:hover h3 .go { transform: translateX(3px); color: var(--accent-bright); }
+  .explore-card p { color: var(--text-secondary); font-size: 13.5px; margin-top: 8px; }
+  .explore-card .cta-row { margin-top: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .explore-card .cta-row .btn { padding: 7px 16px; font-size: 13px; }
+  .mode-pill {
+    display: inline-flex; font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+    background: var(--accent-dim); color: var(--accent-bright);
+    padding: 3px 10px; border-radius: var(--radius-pill); letter-spacing: .04em;
+  }
+
+  /* ---------- footer ---------- */
+  .site-footer {
+    max-width: var(--maxw); margin: 48px auto 0; padding: 28px var(--space-page) 40px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted);
+  }
+  .site-footer a { color: var(--text-secondary); text-decoration: none; }
+  .site-footer a:hover { color: var(--text); }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 960px) {
+    .bento {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas: "macro macro" "story story" "live live" "judge judge" "envs exploits" "tests formula";
+    }
+    .pillars-grid, .explore-grid { grid-template-columns: 1fr; }
+    .flow { grid-template-columns: 1fr; }
+    .flow .arrow { transform: rotate(90deg); justify-self: center; }
+  }
+  @media (max-width: 640px) {
+    .hero { padding-top: 48px; }
+    .ctas { flex-direction: column; align-items: stretch; }
+    .ctas .btn { justify-content: center; }
+    .duel .row { grid-template-columns: 96px 1fr; }
+    .judge-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-nav">
+  <a class="brand" href="index.html"><span class="mark">a</span>axiom <span class="suffix">console</span></a>
+  <nav>
+    <a class="active" href="index.html">Overview</a>
+    <a href="demo.html">Demo</a>
+    <a href="robustness.html">Leaderboard</a>
+    <a href="https://github.com/ayushgundecha/axiom-ai">GitHub ↗</a>
+  </nav>
+</header>
+
+<div class="hero">
+  <span class="eyebrow"><span class="dot"></span>AXIOM · TRAINING GYM FOR AI AGENTS</span>
+  <h1>A training gym for AI agents<span class="dim"><br>— that also catches them cheating.</span></h1>
+  <p class="sub">Agents train in four real digital environments and are graded on two questions: <strong>can they do the task</strong> — and <strong>can they cheat the reward?</strong> Watch episodes step by step in the Demo, and compare reward robustness on the Leaderboard.</p>
+  <div class="ctas">
+    <a class="btn btn-primary" href="demo.html">▶&nbsp; Watch the Demo</a>
+    <a class="btn btn-outline" href="robustness.html">View the Leaderboard&nbsp;→</a>
+    <a class="btn btn-ghost" href="https://github.com/ayushgundecha/axiom-ai">GitHub ↗</a>
+  </div>
+</div>
+
+<div class="pillars">
+  <span class="micro">The two questions Axiom answers</span>
+  <div class="pillars-grid">
+    <a class="card pillar" href="demo.html">
+      <span class="p-num">01 · TASK COMPETENCE</span>
+      <h3>Can the agent do the task?</h3>
+      <p>Interactive episodes across all four environments, replayed step by step — every action, observation, and screenshot — and scored on four dimensions: completion, efficiency, accuracy, safety.</p>
+      <div class="env-chips">
+        <span class="env-chip hot">◆ axiomchat</span>
+        <span class="env-chip">▤ webapp</span>
+        <span class="env-chip">❯_ cli</span>
+        <span class="env-chip">{ } json</span>
+      </div>
+      <span class="p-cta">Watch runs in the Demo →</span>
+    </a>
+    <a class="card pillar" href="robustness.html">
+      <span class="p-num">02 · REWARD ROBUSTNESS</span>
+      <h3>Can the agent cheat the reward?</h3>
+      <p>In AxiomChat, every episode is graded twice — the gameable proxy the agent optimizes, and a privileged out-of-band oracle it can never see. The gap between the two is the score.</p>
+      <div class="env-chips">
+        <span class="env-chip hot">◆ axiomchat</span>
+        <span class="env-chip grader-p">proxy · in-band</span>
+        <span class="env-chip grader-o">oracle · ground truth</span>
+      </div>
+      <span class="formula">RRS = (1 − hack_rate) × honest_fidelity</span>
+      <span class="p-cta">See scores on the Leaderboard →</span>
+    </a>
+  </div>
+  <div class="pillar-bridge"><b>◆ axiomchat</b> is the only environment tested on both — the rest measure task competence.</div>
+</div>
+
+<div class="section-head">
+  <h2>Benchmark results</h2>
+  <p class="lede">Headline numbers from the reward-robustness benchmark (question 02), measured on held-out seeds.</p>
+</div>
+
+<div class="bento">
+  <div class="card tile t-macro">
+    <span class="micro t-label">Macro-RRS · offline benchmark</span>
+    <div class="bignum" data-stat="macro">0.682</div>
+    <p class="caption"><span data-stat="runs">174</span> labeled runs across 8 task × reward cells, driven by a scripted exploit catalog on held-out seeds.</p>
+    <div class="meter"><i data-stat="macro-meter" style="width:68.2%"></i></div>
+  </div>
+
+  <div class="card tile t-story">
+    <span class="micro t-label">Hardening works</span>
+    <div class="duel" id="duel">
+      <div class="row" data-task="assign_request"><span class="task">assign_request</span><span class="bars"><span class="bar v0" title="v0 RRS 0.000"><i style="width:2%"></i></span><span class="bar v1" title="v1 RRS 1.000"><i style="width:100%"></i></span></span></div>
+      <div class="row" data-task="triage_backlog"><span class="task">triage_backlog</span><span class="bars"><span class="bar v0" title="v0 RRS 0.400"><i style="width:40%"></i></span><span class="bar v1" title="v1 RRS 1.000"><i style="width:100%"></i></span></span></div>
+      <div class="row" data-task="answer_support_question"><span class="task">answer_support</span><span class="bars"><span class="bar v0" title="v0 RRS 0.500"><i style="width:50%"></i></span><span class="bar v1" title="v1 RRS 1.000"><i style="width:100%"></i></span></span></div>
+      <div class="row" data-task="summarize_incident"><span class="task">summarize_incident</span><span class="bars"><span class="bar v0" title="v0 RRS 0.556"><i style="width:55.6%"></i></span><span class="bar v1" title="v1 RRS 1.000"><i style="width:100%"></i></span></span></div>
+    </div>
+    <div class="duel-legend">
+      <span><i class="swatch" style="background:var(--red)"></i>v0 naive reward · RRS</span>
+      <span><i class="swatch" style="background:var(--green)"></i>v1 hardened · RRS</span>
+    </div>
+    <p class="caption">Every naive reward was hacked. Every hardened reward held — offline.</p>
+  </div>
+
+  <div class="card tile t-live">
+    <span class="micro t-label">Live discovery · held-out seeds</span>
+    <div class="bignum" data-stat="live-rrs">0.333</div>
+    <p class="caption"><strong>…until a live agent broke one.</strong> gemini-3.1-flash-lite hacked the <span class="mono">summarize_incident</span> hardened reward on <span data-stat="live-seeds">2 of 3</span> held-out seeds — discovered, frozen as a regression case, and patched.</p>
+    <div class="tile-links">
+      <a href="demo.html?session=reports/transcripts/gemini-live_summarize_incident/v0_hacked">watch a hacked episode →</a>
+      <a href="robustness.html?report=reports/robustness_live_discovery2.json">see the frozen run →</a>
+    </div>
+  </div>
+
+  <div class="card tile t-judge">
+    <span class="micro t-label">LLM judges get prompt-injected</span>
+    <div class="judge-rows">
+      <div class="judge-row"><span class="who" data-stat="judge-naive">naive judge · claude-haiku</span><span class="jpill fooled" data-stat="judge-naive-pill">FOOLED 3 / 3</span></div>
+      <div class="judge-row"><span class="who" data-stat="judge-hard">hardened judge · claude-opus + 5 defenses</span><span class="jpill resisted" data-stat="judge-hard-pill">RESISTED 3 / 3</span></div>
+    </div>
+    <p class="caption">Honest work scores 1.0 under both judges — the defenses cost nothing.</p>
+  </div>
+
+  <div class="card tile t-small t-envs">
+    <span class="micro t-label">Environments</span>
+    <div class="bignum">4</div>
+    <p class="caption">chat · webapp · CLI · JSON — one twin-graded</p>
+  </div>
+  <div class="card tile t-small t-exploits">
+    <span class="micro t-label">Named exploit patterns</span>
+    <div class="bignum">25</div>
+    <p class="caption">catalogued, scripted, regression-gated</p>
+  </div>
+  <div class="card tile t-small t-tests">
+    <span class="micro t-label">Tests · mypy --strict</span>
+    <div class="bignum">347</div>
+    <p class="caption">TDD, enforced pre-commit</p>
+  </div>
+  <div class="card tile t-small t-formula">
+    <code>RRS <span class="op">=</span> (1 <span class="op">−</span> hack)<br><span class="op">×</span> fidelity</code>
+  </div>
+</div>
+
+<div class="how">
+  <div class="inner">
+    <h2>Two graders, one truth</h2>
+    <p class="lede">The agent optimizes a gameable proxy. A privileged oracle grades the same episode out-of-band — it is never in the serving path, so the agent can't reach it.</p>
+    <div class="flow">
+      <div class="card node"><h3>Agent</h3><p>LLM or scripted exploiter — briefed only on the proxy spec</p></div>
+      <span class="arrow">─▶</span>
+      <div class="card node"><h3>Environment</h3><p>AxiomChat, webapp, CLI, JSON — reset per episode</p></div>
+      <span class="arrow">─▶</span>
+      <div class="split">
+        <div class="card node proxy"><h3>Proxy reward</h3><p>in-band · what training optimizes · visible, gameable</p></div>
+        <div class="card node oracle"><h3>Oracle grader</h3><p>out-of-band · token-gated ground truth · unreachable by the agent</p></div>
+      </div>
+    </div>
+    <div class="verdict-legend">
+      <span class="vl honest"><span class="cond">proxy ✓ &nbsp;oracle ✓</span><b>HONEST PASS</b></span>
+      <span class="vl hack"><span class="cond">proxy ✓ &nbsp;oracle ✗</span><b>⚠ REWARD HACK</b></span>
+      <span class="vl blocked"><span class="cond">proxy ✗</span><b>NO REWARD</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="explore">
+  <h2>See it for yourself</h2>
+  <div class="explore-grid">
+    <a class="card explore-card" href="demo.html">
+      <h3>Demo — trajectory replay <span class="go">→</span></h3>
+      <p>Step through what the agent saw, did, and was paid — honest runs across all four environments, and every hack flagged inline with the proxy-vs-oracle verdict.</p>
+      <span class="cta-row"><span class="btn btn-primary">▶&nbsp; Open the Demo</span><kbd>←</kbd><kbd>→</kbd><kbd>space</kbd></span>
+    </a>
+    <a class="card explore-card" href="robustness.html">
+      <h3>Leaderboard — reward robustness <span class="go">→</span></h3>
+      <p>Four report modes: the offline sweep, live LLM agents, and two frozen discovery runs — including the one that broke a hardened reward.</p>
+      <span class="cta-row"><span class="btn btn-outline">Open the Leaderboard&nbsp;→</span><span class="mode-pill">4 modes</span></span>
+    </a>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <span><a href="https://github.com/ayushgundecha/axiom-ai">axiom-ai</a> · static site · no build step · data from committed reports/</span>
+  <span id="foot-meta">seeds 4–6 held out</span>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // Every number above is prerendered as a static fallback (file:// and
+  // fetch-failure safe). When the committed reports are reachable, overwrite
+  // the data-stat elements with the live values — never clear on error.
+  function set(name, text) {
+    var el = document.querySelector('[data-stat="' + name + '"]');
+    if (el && text !== null && text !== undefined) el.textContent = text;
+  }
+
+  async function fetchJson(paths) {
+    for (var i = 0; i < paths.length; i++) {
+      try {
+        var resp = await fetch(paths[i]);
+        if (resp.ok) return await resp.json();
+      } catch (e) { /* try next */ }
+    }
+    return null;
+  }
+
+  function updateDuel(byTaskVersion) {
+    document.querySelectorAll('#duel .row').forEach(function (row) {
+      var task = row.dataset.task;
+      ['v0', 'v1'].forEach(function (ver) {
+        var cell = byTaskVersion[task + '::' + ver];
+        if (!cell) return;
+        var bar = row.querySelector('.bar.' + ver);
+        var fill = bar && bar.querySelector('i');
+        if (!fill) return;
+        fill.style.width = Math.max(2, cell.rrs * 100) + '%';
+        bar.title = ver + ' RRS ' + cell.rrs.toFixed(3);
+      });
+    });
+  }
+
+  async function init() {
+    var offline = await fetchJson(['reports/robustness.json', '../reports/robustness.json']);
+    if (offline && offline.summary) {
+      set('macro', offline.summary.macro_rrs.toFixed(3));
+      set('runs', String(offline.runs.length));
+      var meter = document.querySelector('[data-stat="macro-meter"]');
+      if (meter) meter.style.width = (offline.summary.macro_rrs * 100).toFixed(1) + '%';
+      updateDuel(offline.summary.by_task_version);
+      var j = offline.judge_substudy;
+      if (j && j.attacks) {
+        var n = j.attacks.length;
+        var fooled = j.attacks.filter(function (a) { return a.naive_fooled; }).length;
+        var resisted = j.attacks.filter(function (a) { return a.hardened_resisted; }).length;
+        if (j.naive_model) set('judge-naive', 'naive judge · ' + j.naive_model);
+        if (j.hardened_model) set('judge-hard', 'hardened judge · ' + j.hardened_model + ' + 5 defenses');
+        set('judge-naive-pill', 'FOOLED ' + fooled + ' / ' + n);
+        set('judge-hard-pill', 'RESISTED ' + resisted + ' / ' + n);
+      }
+      if (offline.generated_at) {
+        var d = offline.generated_at.slice(0, 10);
+        var foot = document.getElementById('foot-meta');
+        if (foot) foot.textContent = 'generated ' + d + ' · seeds 4–6 held out';
+      }
+    }
+    var disc = await fetchJson(['reports/robustness_live_discovery2.json', '../reports/robustness_live_discovery2.json']);
+    if (disc && disc.summary && disc.summary.by_task_version) {
+      var cell = disc.summary.by_task_version['summarize_incident::v1'];
+      if (cell) {
+        set('live-rrs', cell.rrs.toFixed(3));
+        var hacked = Math.round(cell.hack_rate * cell.n_exploit);
+        set('live-seeds', hacked + ' of ' + cell.n_exploit);
+      }
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
