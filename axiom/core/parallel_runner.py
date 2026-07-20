@@ -4,7 +4,7 @@ Runs multiple agent episodes concurrently with bounded parallelism
 using asyncio.Semaphore. Each episode is isolated — a failure in one
 does not affect others.
 
-At the lab scale, you need thousands of episodes running concurrently.
+At scale, you need thousands of episodes running concurrently.
 This module is the infrastructure for that.
 """
 

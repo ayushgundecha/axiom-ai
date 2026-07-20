@@ -1,6 +1,6 @@
 """CLI/terminal environment — sandboxed shell command execution.
 
-Maps to the lab's Terminal-Bench work: agents operate computers via
+Maps to Terminal-Bench-style work: agents operate computers via
 command-line interfaces. Commands execute in a sandboxed temporary
 directory with an allowlist of safe commands and full-command inspection
 for dangerous patterns (path traversal, dangerous redirects).

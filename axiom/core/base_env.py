@@ -1,6 +1,6 @@
 """Abstract base environment following the Gymnasium reset/step/observe interface.
 
-This is the same pattern used by OSWorld, SWE-bench, and the lab's
+This is the same pattern used by OSWorld and SWE-bench-style
 training environments. Every concrete environment (JSON, WebApp, CLI)
 inherits from BaseEnvironment.
 

@@ -3,7 +3,7 @@
 
 Runs both agents across all tasks and produces a comparison table
 showing that Claude significantly outperforms random. This is the
-evaluation credibility signal the lab wants to see.
+evaluation-credibility signal the benchmark is designed to produce.
 
 Usage:
     # Start servers first, then:

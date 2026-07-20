@@ -45,13 +45,8 @@ docker-compose.override.yml
 # Trajectories (large binary data)
 trajectories/*/
 
-# Private planning docs (local only — not published)
-docs/ROADMAP.md
-docs/deep-dive.md
-docs/pillar-*.md
-docs/minigym_v2_blueprint.md
-docs/final_touchdown.md
-docs/notes/
+# Local-only notes and drafts (not part of the published project)
+docs-2/
 
 # Scratch robustness reports (underscore-prefixed smokes)
 reports/_*.json
@@ -64,7 +59,8 @@ reports/robustness_smoke*.json
 *.log
 tmp/
 
-# Beads / Dolt files (added by bd init)
+# Beads / Dolt files (local issue tracker — not part of the published project)
+.beads/
 .dolt/
 *.db
 .beads-credential-key

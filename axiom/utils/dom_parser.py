@@ -5,7 +5,7 @@ and irrelevant attributes waste tokens. This parser extracts only interactive
 elements (input, button, a, select, textarea, label) and semantic structure
 (h1-h4, p, li, span, div, form) with important attributes.
 
-This mirrors the accessibility tree approach used by OSWorld and the lab's
+This mirrors the accessibility tree approach used by OSWorld-style
 computer-use environments. A full HTML page might be 50K tokens; the
 simplified DOM is typically under 2K tokens.
 """

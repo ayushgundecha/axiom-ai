@@ -1,7 +1,7 @@
 """WebApp environment — Playwright browser automation.
 
-This is the centerpiece of axiom-ai, mapping directly to the lab's
-OSWorld environments. A real web application runs (in Docker or locally)
+This is the centerpiece of axiom-ai, mapping directly to
+OSWorld-style environments. A real web application runs (in Docker or locally)
 and an AI agent interacts with it via Playwright browser automation.
 
 How it works:
@@ -49,7 +49,7 @@ _ACTION_TIMEOUT_MS = 5000
 class WebAppEnvironment(BaseEnvironment):
     """Playwright-powered browser environment.
 
-    Mirrors how the lab/OSWorld environments work:
+    Mirrors how OSWorld-style environments work:
       - Real app runs in Docker or locally
       - Agent observes via screenshots + DOM / accessibility tree
       - Agent acts via click, type, press_key, select, scroll
