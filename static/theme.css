@@ -1,0 +1,208 @@
+/* ============================================================================
+   Axiom Console — shared design system
+   Bento + dark minimal. Tokens + shared components only; page-specific layout
+   and every class emitted by page JS lives in that page's own <style> block.
+   Legacy aliases (--font, --text-muted, --cyan) are load-bearing: demo.html's
+   JS writes inline styles that reference them.
+   ========================================================================== */
+
+:root {
+  /* Surfaces — near-black */
+  --bg: #0a0a0b;
+  --bg-subtle: #101012;
+  --bg-card: #141416;
+  --bg-hover: #1a1a1e;
+  --bg-inset: #0d0d0f;
+
+  /* Borders */
+  --border: #232328;
+  --border-strong: #303038;
+
+  /* Text */
+  --text: #ededf0;
+  --text-secondary: #a1a1aa;
+  --text-muted: #6e6e78;
+
+  /* Accent — one strong color */
+  --accent: #7c86ff;
+  --accent-bright: #98a0ff;
+  --accent-dim: rgba(124, 134, 255, 0.10);
+  --accent-glow: rgba(124, 134, 255, 0.25);
+
+  /* Semantic — status colors, always paired with a label/icon, never alone */
+  --green: #3dd68c;
+  --green-dim: rgba(61, 214, 140, 0.12);
+  --red: #f2555a;
+  --red-dim: rgba(242, 85, 90, 0.12);
+  --yellow: #f0b429;
+  --yellow-dim: rgba(240, 180, 41, 0.12);
+  --purple: #b88df7;
+  --cyan: #4cc9e8;
+
+  /* Shape + rhythm */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --space-page: 24px;
+  --maxw: 1120px;
+
+  /* Type */
+  --font-sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+  --font: var(--font-mono);
+
+  color-scheme: dark;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+::selection { background: var(--accent-dim); }
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent-glow);
+  outline-offset: 2px;
+}
+
+/* Thin scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- shared nav ---------- */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 56px;
+  padding: 0 var(--space-page);
+  background: rgba(10, 10, 11, 0.78);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-weight: 650;
+  font-size: 15.5px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.brand .mark {
+  width: 20px;
+  height: 20px;
+  align-self: center;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent) 0%, #5a63d8 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: #0a0a0b;
+}
+.brand .suffix { color: var(--text-muted); font-weight: 400; font-size: 13.5px; }
+.site-nav nav { display: flex; gap: 4px; margin-left: auto; }
+.site-nav nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13.5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+.site-nav nav a:hover { color: var(--text); background: var(--bg-hover); }
+.site-nav nav a.active { color: var(--text); }
+.site-nav nav a.active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -9px;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ---------- cards / tiles ---------- */
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008)), var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: border-color 0.18s ease;
+}
+.card:hover { border-color: var(--border-strong); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 550;
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn:hover { border-color: var(--border-strong); background: var(--bg-hover); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #0a0a0b; }
+.btn-primary:hover { background: var(--accent-bright); border-color: var(--accent-bright); }
+.btn-outline { background: transparent; border-color: rgba(124, 134, 255, 0.45); color: var(--accent-bright); }
+.btn-outline:hover { background: var(--accent-dim); border-color: var(--accent); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-secondary); }
+.btn-ghost:hover { color: var(--text); background: var(--bg-hover); border-color: transparent; }
+
+/* ---------- small primitives ---------- */
+.micro {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.mono { font-family: var(--font-mono); }
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
