@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>axiom-ai architecture</title>
+<!--
+  Source of truth for docs/images/architecture.png.
+  Regenerate (repo root):
+    python - <<'EOF'
+    import asyncio
+    from playwright.async_api import async_playwright
+    async def main():
+        async with async_playwright() as p:
+            b = await p.chromium.launch()
+            page = await b.new_page(viewport={"width": 1360, "height": 900}, device_scale_factor=2)
+            await page.goto("file://" + __import__("os").path.abspath("docs/architecture.html"))
+            await page.wait_for_timeout(300)
+            await page.screenshot(path="docs/images/architecture.png", full_page=True)
+            await b.close()
+    asyncio.run(main())
+    EOF
+-->
+<style>
+  :root {
+    --bg: #0a0a0b; --bg-subtle: #101012; --bg-card: #141416; --bg-inset: #0d0d0f;
+    --border: #232328; --border-strong: #303038;
+    --text: #ededf0; --text-secondary: #a1a1aa; --text-muted: #6e6e78;
+    --accent: #7c86ff; --accent-bright: #98a0ff; --accent-dim: rgba(124,134,255,.10);
+    --green: #3dd68c; --green-dim: rgba(61,214,140,.12);
+    --red: #f2555a; --red-dim: rgba(242,85,90,.12);
+    --yellow: #f0b429; --purple: #b88df7; --cyan: #4cc9e8;
+    --sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1360px; margin: 0 auto; padding: 36px 40px 44px;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .masthead { display: flex; align-items: baseline; gap: 12px; margin-bottom: 26px; }
+  .masthead .mark {
+    width: 22px; height: 22px; align-self: center; border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent) 0%, #5a63d8 100%);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 12px; font-weight: 700; color: #0a0a0b;
+  }
+  .masthead h1 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+  .masthead .sub { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+
+  .band { border: 1px solid var(--border); border-radius: 16px; padding: 18px 22px 20px; background: var(--bg-subtle); }
+  .band-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+  .band-num {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
+    color: var(--accent-bright); background: var(--accent-dim);
+    border: 1px solid rgba(124,134,255,.22); padding: 1px 9px; border-radius: 999px;
+  }
+  .band-title {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted);
+  }
+  .band-note { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+  .row { display: grid; gap: 12px; }
+  .cards-3 { grid-template-columns: repeat(3, 1fr); }
+  .cards-2 { grid-template-columns: 1fr 1fr; }
+  .cards-4 { grid-template-columns: 1fr 1fr 1fr 1.35fr; }
+
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,.028), rgba(255,255,255,.008)), var(--bg-card);
+    border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px;
+  }
+  .card h3 { font-size: 13.5px; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+  .card h3 .glyph { font-family: var(--mono); font-size: 11px; color: var(--accent-bright); }
+  .card p { font-size: 12px; color: var(--text-secondary); margin-top: 5px; line-height: 1.55; }
+  .card p code, .chip code {
+    font-family: var(--mono); font-size: 11px; color: var(--text-secondary);
+    background: var(--bg-inset); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px;
+  }
+  .card .q { font-family: var(--mono); font-size: 11px; color: var(--accent-bright); letter-spacing: .04em; margin-bottom: 4px; }
+  .card.hot { border-color: rgba(124,134,255,.45); background: linear-gradient(180deg, rgba(124,134,255,.07), transparent), var(--bg-card); }
+  .card.proxy { border-color: rgba(124,134,255,.4); }
+  .card.proxy h3 { color: var(--accent-bright); }
+  .card.oracle { border-color: rgba(61,214,140,.4); }
+  .card.oracle h3 { color: var(--green); }
+
+  .flow { display: flex; flex-direction: column; align-items: center; padding: 6px 0; }
+  .flow .stem { width: 2px; height: 12px; background: var(--border-strong); }
+  .flow .head { color: var(--border-strong); font-size: 13px; line-height: .7; margin-top: -1px; }
+  .flow .lbl { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+  .flow .lbl b { color: var(--text-secondary); font-weight: 550; }
+  .flow-2 { display: grid; grid-template-columns: 1fr 1fr; }
+
+  .verdict-chip {
+    display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px;
+    border-radius: 999px; padding: 3px 12px; letter-spacing: .03em;
+  }
+  .verdict-chip.hack { background: var(--red-dim); color: var(--red); border: 1px solid rgba(242,85,90,.35); }
+
+  .split-mid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+  .rrs {
+    font-family: var(--mono); font-size: 12.5px; color: var(--accent-bright); text-align: center;
+    background: var(--bg-inset); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; line-height: 1.7;
+  }
+  .rrs .op { color: var(--text-muted); }
+  .split-grid { display: grid; grid-template-columns: 1.2fr .9fr 1.2fr; gap: 12px; align-items: stretch; }
+
+  .loop { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; margin-top: 12px; }
+  .loop .larrow { font-family: var(--mono); color: var(--text-muted); font-size: 14px; text-align: center; }
+  .loop .larrow small { display: block; font-size: 10px; letter-spacing: .02em; }
+  .loop-back {
+    margin-top: 10px; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+    border-top: 1px dashed var(--border-strong); padding-top: 8px;
+  }
+  .loop-back b { color: var(--red); font-weight: 600; }
+
+  .out-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .console-card {
+    margin-top: 12px; border-color: rgba(124,134,255,.45); text-align: center; padding: 14px 16px;
+    background: linear-gradient(180deg, rgba(124,134,255,.07), transparent), var(--bg-card);
+  }
+  .console-card h3 { justify-content: center; }
+  .footnote { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--text-muted); text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <span class="mark">a</span>
+  <h1>axiom-ai</h1>
+  <span class="sub">one environment interface · two graders · one console</span>
+</div>
+
+<!-- 1 · AGENTS -->
+<section class="band">
+  <div class="band-head"><span class="band-num">1</span><span class="band-title">Agents</span>
+    <span class="band-note">agents/ · multi-provider (Anthropic | Gemini)</span></div>
+  <div class="row cards-3">
+    <div class="card"><h3>Honest agent</h3><p>vision + DOM — genuinely does the task</p></div>
+    <div class="card"><h3>Exploiter agent</h3><p>briefed on the <b>proxy spec only</b> — takes the laziest path that still pays</p></div>
+    <div class="card"><h3>Random agent</h3><p>baseline</p></div>
+  </div>
+</section>
+
+<div class="flow"><span class="stem"></span><span class="head">▼</span>
+  <span class="lbl">the same agents are graded by <b>two runners</b></span></div>
+
+<!-- 2 · TWO RUNNERS -->
+<section class="band">
+  <div class="band-head"><span class="band-num">2</span><span class="band-title">Two runners — two questions</span></div>
+  <div class="row cards-2">
+    <div class="card">
+      <div class="q">01 · TASK COMPETENCE</div>
+      <h3>Interactive API — can it do the task?</h3>
+      <p><code>run_demo.py</code> → FastAPI <code>:8000</code> · sessions / step / evaluate<br>
+      4-dim score: completion · efficiency · accuracy · safety</p>
+    </div>
+    <div class="card">
+      <div class="q">02 · REWARD ROBUSTNESS</div>
+      <h3>Benchmark harness — can it cheat the reward?</h3>
+      <p><code>run_robustness.py</code> · tasks × seeds × agents × reward v0/v1<br>
+      <b>sole holder of the oracle token</b> — grades out-of-band, never in the serving path</p>
+    </div>
+  </div>
+</section>
+
+<div class="flow-2">
+  <div class="flow"><span class="stem"></span><span class="head">▼</span><span class="lbl">01 drives <b>all four</b> environments</span></div>
+  <div class="flow"><span class="stem"></span><span class="head">▼</span><span class="lbl">02 drives <b>AxiomChat only</b></span></div>
+</div>
+
+<!-- 3 · ENVIRONMENTS -->
+<section class="band">
+  <div class="band-head"><span class="band-num">3</span><span class="band-title">Environments — one interface</span>
+    <span class="band-note">BaseEnvironment + @register_env · async context-managed · reset per episode</span></div>
+  <div class="row cards-4">
+    <div class="card"><h3><span class="glyph" style="color:var(--purple)">{ }</span>JSON</h3><p>pure-Python state machine — instant, zero deps</p></div>
+    <div class="card"><h3><span class="glyph" style="color:var(--yellow)">❯_</span>CLI</h3><p>sandboxed subprocess · 28 allowlisted commands</p></div>
+    <div class="card"><h3><span class="glyph" style="color:var(--cyan)">▤</span>WebApp</h3><p>Playwright + Chromium · todo app <code>:3000</code></p></div>
+    <div class="card hot"><h3><span class="glyph">◆</span>AxiomChat</h3><p>deterministic mini-Slack <code>:3100</code> · seeded reset → byte-reproducible · token-gated oracle <code>/api/_oracle/state</code></p></div>
+  </div>
+</section>
+
+<div class="flow"><span class="stem"></span><span class="head">▼</span>
+  <span class="lbl">every AxiomChat episode is graded <b>twice</b></span></div>
+
+<!-- 4 · GRADING SPLIT -->
+<section class="band">
+  <div class="band-head"><span class="band-num">4</span><span class="band-title">The grading split</span>
+    <span class="verdict-chip hack">reward hack ≡ proxy_pass ∧ ¬oracle_pass</span></div>
+  <div class="split-grid">
+    <div class="card proxy">
+      <h3>PROXY — in-band</h3>
+      <p>the live training reward · cheap, gameable · DOM/regex/keyword/count or LLM judge · <b>v0 naive → v1 hardened</b> · all the agent is ever scored on</p>
+    </div>
+    <div class="split-mid">
+      <div class="rrs">RRS <span class="op">=</span> (1 <span class="op">−</span> hack_rate)<br><span class="op">×</span> honest_fidelity</div>
+      <span class="lbl" style="font-family:var(--mono);font-size:10.5px;color:var(--text-muted)">held-out eval seeds</span>
+    </div>
+    <div class="card oracle">
+      <h3>ORACLE — out-of-band</h3>
+      <p>privileged ground truth · deterministic, never an LLM · harness diffs pre/post state after each episode · <b>the agent never sees it</b></p>
+    </div>
+  </div>
+
+  <div class="loop">
+    <div class="card"><h3>Exploit catalog</h3><p>25 named patterns + live-discovered hacks</p></div>
+    <div class="larrow">─▶<small>finds a hack</small></div>
+    <div class="card"><h3>Named defense</h3><p>v1 = v0 + defenses · truth-free gates, honest work still pays</p></div>
+    <div class="larrow">─▶<small>frozen as</small></div>
+    <div class="card"><h3>Corpus regression · CI</h3><p>no-false-negative gate on every push</p></div>
+  </div>
+  <div class="loop-back">◀── the attacker tries again — <b>a live LLM broke hardened rewards twice</b> on held-out seeds; every hole became a new case + defense</div>
+</section>
+
+<div class="flow"><span class="stem"></span><span class="head">▼</span></div>
+
+<!-- 5 · OUTPUTS -->
+<section class="band">
+  <div class="band-head"><span class="band-num">5</span><span class="band-title">Outputs — one console</span></div>
+  <div class="out-grid">
+    <div class="card"><h3>trajectories/</h3><p>every step + screenshot + the proxy/oracle verdict, one format for all envs</p></div>
+    <div class="card"><h3>reports/*.json</h3><p>offline · live · frozen discovery runs — mode + model labels in <code>meta</code></p></div>
+  </div>
+  <div class="card console-card">
+    <h3>Axiom Console — Overview · Demo (REWARD HACK banner) · Leaderboard</h3>
+    <p>→ GitHub Pages · <code>ayushgundecha.github.io/axiom-ai</code></p>
+  </div>
+  <div class="footnote">LLM-judge sub-study: naive judge fooled 3/3 prompt injections · hardened judge (5 defenses) resisted 3/3</div>
+</section>
+
+</body>
+</html>
