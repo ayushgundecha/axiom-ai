@@ -118,7 +118,7 @@ That loop — find the hack, make it a test, close it, measure — is the proble
 
 ## Try it
 
-- **Live leaderboard:** https://ayushgundecha.github.io/axiom-ai/ (toggle Offline · Live · both discovery runs)
+- **Live leaderboard:** https://ayushgundecha.github.io/axiom-ai/robustness.html (toggle Offline · Live · both discovery runs)
 - **Reproduce offline with zero API keys:** `python scripts/run_robustness.py --train-seeds 1 2 3 --eval-seeds 4 5 6 --judge`
 - **Code:** exploit catalog in `tasks/axiomchat/exploits/catalog.yaml`, defenses in `axiom/robustness/hardening.py`, the metric in `axiom/robustness/metrics.py`.
 
