@@ -436,6 +436,7 @@
   let baseTrajectoryUrl = '';
   let staticBase = false;  // true when replaying committed reports/transcripts (no API)
   let obsToken = 0;        // guards against out-of-order async screenshot loads
+  let shotCache = {};      // step_num -> preloaded Image, reset per trajectory
 
   // DOM refs
   const headerMeta = document.getElementById('header-meta');
@@ -563,6 +564,7 @@
         staticBase = isPath;
         currentStep = 0;
         stopPlaying();
+        preloadScreenshots();
         showReplayView();
         renderStep();
         highlightSidebar(sessionId);
@@ -668,35 +670,79 @@
     }
   }
 
+  function isVisualEnv() {
+    return trajectory && (trajectory.env_type === 'webapp' || trajectory.env_type === 'axiomchat');
+  }
+
+  function screenshotUrl(stepNum) {
+    // API-served trajectories keep PNGs under screenshots/; committed
+    // transcripts store them flat next to trajectory.json.
+    return baseTrajectoryUrl + (staticBase ? '/step_' : '/screenshots/step_') + stepNum + '.png';
+  }
+
+  // Warm every step's screenshot as soon as a run opens, so the first
+  // play-through is as smooth as a replay from cache. Sequential (one image
+  // in flight) and in step order, so on a slow network the loader stays just
+  // ahead of playback instead of 18 fetches starving each other.
+  function preloadScreenshots() {
+    shotCache = {};
+    if (!isVisualEnv()) return;
+    const cacheForThisRun = shotCache;
+    const stepNums = trajectory.steps.map((s) => s.step_num);
+    let i = 0;
+    const next = () => {
+      if (cacheForThisRun !== shotCache || i >= stepNums.length) return;
+      const n = stepNums[i++];
+      let img = cacheForThisRun[n];
+      if (!img) {
+        img = new Image();
+        cacheForThisRun[n] = img;
+        img.src = screenshotUrl(n);
+      }
+      if (img.complete) { next(); return; }
+      img.addEventListener('load', next, { once: true });
+      img.addEventListener('error', next, { once: true });
+    };
+    next();
+  }
+
   function renderObservation(step) {
     const obs = step.observation || {};
-    const visual = trajectory.env_type === 'webapp' || trajectory.env_type === 'axiomchat';
-
-    if (visual) {
-      // API-served trajectories keep PNGs under screenshots/; committed
-      // transcripts store them flat next to trajectory.json.
-      const screenshotUrl = baseTrajectoryUrl
-        + (staticBase ? '/step_' : '/screenshots/step_') + step.step_num + '.png';
-      // Clear immediately so the previous step's image never lingers (no flash),
-      // and a missing screenshot shows a clean placeholder — never the raw DOM.
-      const token = ++obsToken;
-      obsPanel.innerHTML = '<div class="obs-note">loading step ' + step.step_num + '…</div>';
-      const img = new Image();
-      img.onload = () => {
-        if (token !== obsToken) return;  // a newer step already rendered
-        obsPanel.innerHTML = '';
-        obsPanel.appendChild(img);
-      };
-      img.onerror = () => {
-        if (token !== obsToken) return;
-        obsPanel.innerHTML = '<div class="obs-note">&#128247; no screenshot captured for this step</div>';
-      };
-      img.src = screenshotUrl;
-      img.alt = 'Step ' + step.step_num + ' screenshot';
+    if (!isVisualEnv()) {
+      renderTextObservation(obs);
       return;
     }
 
-    renderTextObservation(obs);
+    const token = ++obsToken;
+    let img = shotCache[step.step_num];
+    if (!img) {
+      img = new Image();
+      img.src = screenshotUrl(step.step_num);
+      shotCache[step.step_num] = img;
+    }
+    img.alt = 'Step ' + step.step_num + ' screenshot';
+    const show = () => {
+      if (token !== obsToken) return;  // a newer step already rendered
+      obsPanel.innerHTML = '';
+      obsPanel.appendChild(img);
+    };
+    const fail = () => {
+      if (token !== obsToken) return;
+      // A missing screenshot shows a clean placeholder — never the raw DOM.
+      obsPanel.innerHTML = '<div class="obs-note">&#128247; no screenshot captured for this step</div>';
+    };
+    if (img.complete) {
+      // Preloaded (or previously fetched): swap frames with zero blank time.
+      if (img.naturalWidth > 0) show(); else fail();
+      return;
+    }
+    // Still in flight: keep the previous frame on screen so playback never
+    // flashes blank — only show a loading note when there is no frame yet.
+    if (!obsPanel.querySelector('img')) {
+      obsPanel.innerHTML = '<div class="obs-note">loading step ' + step.step_num + '…</div>';
+    }
+    img.onload = show;
+    img.onerror = fail;
   }
 
   function renderTextObservation(obs) {
