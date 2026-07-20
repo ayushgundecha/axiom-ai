@@ -15,7 +15,7 @@
   <a href="https://github.com/ayushgundecha/axiom-ai/actions/workflows/ci.yml"><img src="https://github.com/ayushgundecha/axiom-ai/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+"/>
   <img src="https://img.shields.io/badge/mypy-strict-blue" alt="mypy strict"/>
-  <img src="https://img.shields.io/badge/tests-346-brightgreen" alt="346 tests"/>
+  <img src="https://img.shields.io/badge/tests-347-brightgreen" alt="347 tests"/>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT"/>
 </p>
 
@@ -142,6 +142,7 @@ A robust reward has `RRS → 1`: it can't be cheated **and** it still pays hones
 
 Everything the agent does is recorded in one trajectory format and surfaced in one hosted console — [**ayushgundecha.github.io/axiom-ai**](https://ayushgundecha.github.io/axiom-ai/):
 
+- **Overview** — the landing page: the two questions the project answers (can the agent do the task? can it cheat the reward?), the headline numbers pulled live from the committed reports, and how the proxy/oracle split works.
 - **Demo** — pick an environment on the left (AxiomChat, WebApp, CLI, JSON), then a run, and step through exactly what the agent saw, did, and was scored — with the **REWARD HACK / HONEST PASS** verdict banner (proxy paid? oracle satisfied?). Every run replays right on the hosted page; reward-hacking runs are flagged.
 - **Leaderboard** — the RRS scoreboard, with a toggle for Offline · Live · both discovery runs and honest model labels.
 
@@ -186,7 +187,7 @@ python scripts/run_robustness.py --train-seeds 1 2 3 --eval-seeds 4 5 6 --judge
 
 ```bash
 uvicorn axiom.api.app:create_app --factory --port 8000
-open http://localhost:8000/static/demo.html      # Demo · Leaderboard
+open http://localhost:8000/static/index.html     # Overview · Demo · Leaderboard
 ```
 
 **Run a live agent episode** (needs an Anthropic *or* free-tier Gemini key in `.env`; models are recorded in each report's `meta`):
@@ -211,7 +212,7 @@ python scripts/run_demo.py --env axiomchat --task post_message  --agent claude
 ## Engineering
 
 ```
-346 tests · mypy --strict (0 Any escape hatches) · ruff lint + format
+347 tests · mypy --strict (0 Any escape hatches) · ruff lint + format
 Pydantic v2 runtime validation · structlog with session IDs
 async-first · custom exception hierarchy · GitHub Actions CI · Husky pre-commit
 ```
@@ -234,7 +235,7 @@ apps/
   axiomchat/   React+Vite SPA + Express — seeded, oracle-gated mini-Slack
   todo-app/    TypeScript Express target app
 tasks/         json/ · webapp/ · cli/ · axiomchat/ (+ exploits/catalog.yaml)
-static/        demo.html · robustness.html   (the Axiom Console)
+static/        index.html · demo.html · robustness.html · theme.css   (the Axiom Console)
 scripts/       run_robustness.py · run_demo.py · parallel_benchmark.py
 reports/       robustness.json (offline) · robustness_live*.json · transcripts/
 ```

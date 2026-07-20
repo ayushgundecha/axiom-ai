@@ -35,7 +35,7 @@ flowchart TB
     end
 
     subgraph REWARD["🎯 Reward-robustness layer (AxiomChat tasks) — hack ≡ proxy_pass ∧ ¬oracle_pass"]
-        R3["exploit catalog (~20 patterns)<br/>+ live-discovered: verbose-filler,<br/>plausible-severity-filler"]
+        R3["exploit catalog (25 patterns)<br/>+ live-discovered: verbose-filler,<br/>plausible-severity-filler"]
         R4["<b>TDD for rewards</b><br/>every exploit → permanent corpus case<br/>→ named defense → CI regression gate"]
         R1["<b>PROXY</b> v0 naive | v1 hardened<br/>cheap, gameable — the live reward<br/><i>all the agent is ever scored on</i>"]
         R2["<b>ORACLE</b> — privileged ground truth<br/>deterministic, never an LLM, never the<br/>live reward · <i>the agent never sees it</i>"]
@@ -46,7 +46,7 @@ flowchart TB
     subgraph OUT["📦 Outputs — one console"]
         O1["trajectories/<br/>steps + screenshots<br/>+ proxy/oracle verdict"]
         O2["reports/*.json<br/>offline · live · discovery<br/>honest model labels in meta"]
-        O3["<b>axiom console</b><br/>Demo · Replay (REWARD HACK badge) · Leaderboard<br/>→ GitHub Pages"]
+        O3["<b>axiom console</b><br/>Overview · Demo (REWARD HACK banner) · Leaderboard<br/>→ GitHub Pages"]
     end
 
     HONEST --> API
