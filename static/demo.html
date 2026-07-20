@@ -3,180 +3,146 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>axiom-ai | Trajectory Replay</title>
+<title>Axiom Demo — trajectory replay</title>
+<meta name="description" content="Step through what the agent saw, did, and was paid — every reward hack flagged inline with the proxy-vs-oracle verdict.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237c86ff'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230a0a0b'%3Ea%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root {
-    --bg: #0d1117;
-    --bg-card: #161b22;
-    --bg-hover: #1c2128;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-muted: #8b949e;
-    --accent: #58a6ff;
-    --green: #3fb950;
-    --yellow: #d29922;
-    --red: #f85149;
-    --purple: #bc8cff;
-    --radius: 8px;
-    --font: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
+  /* Page layout: fixed app frame on desktop, natural scroll when stacked */
   body {
-    font-family: var(--font);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-  }
-
-  /* Header */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-card);
-  }
-  .header h1 {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--accent);
-    letter-spacing: -0.3px;
-  }
-  .header .meta {
-    display: flex;
-    gap: 16px;
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-  .header .meta span { color: var(--text); font-weight: 500; }
-  .header-left { display: flex; align-items: center; gap: 14px; }
-
-  /* Console nav (shared across demo / replay / leaderboard) */
-  .console-nav { display: flex; gap: 6px; }
-  .console-nav a {
-    font-family: var(--font); font-size: 12px; text-decoration: none;
-    padding: 4px 12px; border-radius: 999px;
-    border: 1px solid var(--border); background: var(--bg-card);
-    color: var(--text-muted);
-  }
-  .console-nav a:hover { background: var(--bg-hover); color: var(--text); }
-  .console-nav a.active {
-    border-color: var(--accent); color: var(--accent);
-    background: rgba(88,166,255,.08);
-  }
-
-  /* Main layout */
-  .main {
-    display: flex;
-    flex: 1;
     overflow: hidden;
   }
 
-  /* Sidebar - trajectory list */
+  /* Run metadata in the nav (JS fills #header-meta with <div>label <span>value</span></div>) */
+  .nav-meta {
+    display: flex;
+    gap: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 16px;
+  }
+  .nav-meta span { color: var(--text-secondary); font-weight: 500; }
+
+  /* Main layout */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar — env selector + run list */
   .sidebar {
     width: 280px;
     border-right: 1px solid var(--border);
-    background: var(--bg-card);
+    background: var(--bg-subtle);
     overflow-y: auto;
     flex-shrink: 0;
   }
   .sidebar h2 {
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: .08em;
     color: var(--text-muted);
-    padding: 16px 16px 8px;
+    padding: 18px 16px 8px;
   }
   .traj-item {
     display: block;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
+    margin: 0 10px 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-card);
     cursor: pointer;
     text-decoration: none;
     color: var(--text);
-    transition: background 0.15s;
+    transition: border-color .15s ease, background .15s ease;
   }
-  .traj-item:hover { background: var(--bg-hover); }
-  .traj-item.active { background: var(--bg-hover); border-left: 3px solid var(--accent); }
-  .traj-item .name { font-size: 13px; font-weight: 500; }
-  .traj-item .info { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .traj-item .hack-tag { display:inline-block; margin-left:6px; padding:0 6px; border-radius:999px;
-    font-size:10px; font-weight:600; background:rgba(248,81,73,.15); color:var(--red); }
+  .traj-item:hover { border-color: var(--border-strong); }
+  .traj-item.active {
+    border-color: rgba(124,134,255,.45);
+    background: linear-gradient(180deg, rgba(124,134,255,.06), transparent), var(--bg-card);
+  }
+  .traj-item .name { font-size: 12.5px; font-weight: 550; line-height: 1.4; }
+  .traj-item .info { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
+  .traj-item .hack-tag { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:var(--radius-pill);
+    font-family:var(--font-mono); font-size:9.5px; font-weight:600; letter-spacing:.06em;
+    background:var(--red-dim); color:var(--red); }
 
   /* Environment selector (top of sidebar) */
-  .env-nav { padding: 12px 12px 6px; border-bottom: 1px solid var(--border); }
+  .env-nav { padding: 14px 10px 8px; border-bottom: 1px solid var(--border); }
   .env-nav .env-btn {
     display: flex; align-items: center; gap: 10px; width: 100%;
     padding: 9px 11px; margin-bottom: 6px;
-    background: var(--bg-hover); border: 1px solid var(--border);
+    background: transparent; border: 1px solid transparent;
     border-radius: var(--radius); cursor: pointer;
-    font-family: var(--font); color: var(--text); text-align: left;
+    font-family: var(--font-sans); color: var(--text-secondary); text-align: left;
+    transition: all .15s ease;
   }
-  .env-nav .env-btn:hover { border-color: var(--text-muted); }
-  .env-nav .env-btn.active { border-color: var(--accent); background: rgba(88,166,255,.08); }
+  .env-nav .env-btn:hover { background: var(--bg-hover); color: var(--text); }
+  .env-nav .env-btn.active {
+    border-color: rgba(124,134,255,.3);
+    background: var(--accent-dim);
+    color: var(--text);
+  }
   .env-nav .env-ic { width: 24px; height: 24px; border-radius: 6px; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; font-size: 13px;
-    background: var(--bg); }
-  .env-nav .env-btn[data-env="axiomchat"] .env-ic { color: var(--accent); }
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 11px;
+    background: var(--bg-inset); border: 1px solid var(--border); }
+  .env-nav .env-btn[data-env="axiomchat"] .env-ic { color: var(--accent-bright); }
   .env-nav .env-btn[data-env="webapp"] .env-ic { color: var(--cyan, #39c5cf); }
-  .env-nav .env-btn[data-env="cli"] .env-ic { color: var(--green); }
+  .env-nav .env-btn[data-env="cli"] .env-ic { color: var(--yellow); }
   .env-nav .env-btn[data-env="json"] .env-ic { color: var(--purple); }
   .env-nav .env-nm { font-size: 13px; font-weight: 600; }
-  .env-nav .env-ct { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+  .env-nav .env-ct { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
 
   /* Content area */
-  .content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
   /* Controls bar */
   .controls {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 24px;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border);
-    background: var(--bg-card);
   }
   .step-label {
-    font-size: 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
     font-weight: 600;
-    min-width: 100px;
+    min-width: 96px;
   }
   .controls button {
-    background: var(--bg-hover);
+    background: var(--bg-card);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 6px 14px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-family: var(--font);
-    font-size: 13px;
-    transition: background 0.15s, border-color 0.15s;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    transition: background .15s ease, border-color .15s ease;
   }
-  .controls button:hover { background: var(--border); border-color: var(--text-muted); }
-  .controls button:disabled { opacity: 0.3; cursor: not-allowed; }
-  .controls button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .controls button:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+  .controls button:disabled { opacity: .3; cursor: not-allowed; }
+  .controls button.active { background: var(--accent); color: #0a0a0b; border-color: var(--accent); }
   .speed-select {
-    background: var(--bg-hover);
+    background: var(--bg-card);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 6px 8px;
-    border-radius: var(--radius);
-    font-family: var(--font);
-    font-size: 13px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 12px;
   }
   .progress-bar {
     flex: 1;
-    height: 4px;
+    height: 3px;
     background: var(--border);
     border-radius: 2px;
     overflow: hidden;
@@ -186,30 +152,29 @@
     height: 100%;
     background: var(--accent);
     border-radius: 2px;
-    transition: width 0.2s;
+    transition: width .2s;
+    box-shadow: 0 0 8px var(--accent-glow);
   }
 
   /* Viewer */
-  .viewer {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-  }
+  .viewer { flex: 1; display: flex; overflow: hidden; }
 
   /* Observation panel */
   .obs-panel {
     flex: 1;
     overflow: auto;
-    padding: 24px;
+    padding: 20px;
     display: flex;
     align-items: flex-start;
     justify-content: center;
+    background: var(--bg-inset);
   }
   .obs-panel img {
     max-width: 100%;
     max-height: 100%;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
   }
   .obs-panel .obs-note {
     margin: auto; color: var(--text-muted); font-size: 13px;
@@ -220,8 +185,9 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 16px;
-    font-size: 13px;
-    line-height: 1.5;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.55;
     overflow: auto;
     width: 100%;
     max-height: 100%;
@@ -233,71 +199,68 @@
   .info-panel {
     width: 340px;
     border-left: 1px solid var(--border);
-    background: var(--bg-card);
     overflow-y: auto;
     flex-shrink: 0;
   }
   .info-section {
-    padding: 16px;
+    padding: 16px 18px;
     border-bottom: 1px solid var(--border);
   }
   .info-section h3 {
+    font-family: var(--font-mono);
     font-size: 11px;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: .08em;
     color: var(--text-muted);
     margin-bottom: 10px;
   }
   .action-display {
-    font-size: 13px;
-    line-height: 1.6;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    word-break: break-all;
   }
-  .action-type {
-    color: var(--accent);
-    font-weight: 600;
-  }
-  .action-target {
-    color: var(--purple);
-  }
-  .action-value {
-    color: var(--green);
-  }
+  .action-type { color: var(--accent-bright); font-weight: 600; }
+  .action-target { color: var(--purple); }
+  .action-value { color: var(--green); }
 
   /* Reward display */
   .reward-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 13px;
+    font-family: var(--font-mono);
+    font-size: 12px;
     padding: 4px 0;
+    color: var(--text-secondary);
   }
-  .reward-value { font-weight: 600; }
+  .reward-value { font-weight: 600; font-variant-numeric: tabular-nums; }
   .reward-positive { color: var(--green); }
   .reward-negative { color: var(--red); }
   .reward-zero { color: var(--text-muted); }
 
   /* Eval bars */
-  .eval-metric {
-    margin-bottom: 10px;
-  }
+  .eval-metric { margin-bottom: 10px; }
   .eval-metric .label {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
     margin-bottom: 4px;
   }
   .eval-metric .label .name { color: var(--text-muted); }
-  .eval-metric .label .value { font-weight: 600; }
+  .eval-metric .label .value { font-weight: 600; font-variant-numeric: tabular-nums; }
   .eval-bar {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
+    height: 5px;
+    background: var(--bg-hover);
+    border-radius: 2.5px;
     overflow: hidden;
   }
   .eval-bar-fill {
     height: 100%;
-    border-radius: 3px;
-    transition: width 0.4s ease;
+    border-radius: 2.5px;
+    transition: width .4s ease;
   }
   .eval-bar-fill.high { background: var(--green); }
   .eval-bar-fill.mid { background: var(--yellow); }
@@ -306,16 +269,17 @@
   /* Status badge */
   .status-badge {
     display: inline-block;
-    font-size: 11px;
+    font-family: var(--font-mono);
+    font-size: 10px;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 12px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: .06em;
   }
-  .status-badge.running { background: rgba(88,166,255,0.15); color: var(--accent); }
-  .status-badge.done { background: rgba(63,185,80,0.15); color: var(--green); }
-  .status-badge.timeout { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .status-badge.running { background: var(--accent-dim); color: var(--accent-bright); }
+  .status-badge.done { background: var(--green-dim); color: var(--green); }
+  .status-badge.timeout { background: var(--yellow-dim); color: var(--yellow); }
 
   /* Empty state */
   .empty-state {
@@ -329,58 +293,71 @@
     padding: 40px;
     text-align: center;
   }
-  .empty-state .icon { font-size: 48px; opacity: 0.3; }
+  .empty-state .icon { font-size: 48px; opacity: .3; color: var(--accent); }
   .empty-state p { font-size: 14px; max-width: 400px; line-height: 1.6; }
 
   /* Keyboard hints */
   .kbd-hints {
     display: flex;
-    gap: 16px;
+    gap: 18px;
+    font-family: var(--font-mono);
     font-size: 11px;
     color: var(--text-muted);
-    padding: 8px 24px;
+    padding: 9px 20px;
     border-top: 1px solid var(--border);
-    background: var(--bg-card);
+    align-items: center;
   }
-  kbd {
-    background: var(--bg-hover);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 1px 5px;
-    font-size: 11px;
-    font-family: var(--font);
-  }
+
   /* Reward-robustness verdict banner (proxy vs oracle) */
   .verdict {
-    display: none; align-items: center; gap: 10px;
-    padding: 8px 16px; font-size: 13px; font-weight: 600;
-    border-bottom: 1px solid var(--border);
+    display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 14px 20px 0;
+    padding: 11px 16px;
+    font-family: var(--font-mono); font-size: 13px; font-weight: 700; letter-spacing: .03em;
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: var(--radius);
   }
-  .verdict.hack { display: flex; background: rgba(248,81,73,.14); color: var(--red); }
-  .verdict.honest { display: flex; background: rgba(63,185,80,.12); color: var(--green); }
-  .verdict.blocked { display: flex; background: rgba(88,166,255,.10); color: var(--accent); }
-  .verdict .detail { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+  .verdict.hack { display: flex; background: var(--red-dim); color: var(--red); border-color: rgba(242,85,90,.35); border-left-color: var(--red); }
+  .verdict.honest { display: flex; background: var(--green-dim); color: var(--green); border-color: rgba(61,214,140,.3); border-left-color: var(--green); }
+  .verdict.blocked { display: flex; background: var(--accent-dim); color: var(--accent-bright); border-color: rgba(124,134,255,.3); border-left-color: var(--accent); }
+  .verdict .detail { font-weight: 400; color: var(--text-muted); font-size: 11.5px; letter-spacing: 0; }
   .vpill {
-    display: inline-block; padding: 1px 8px; border-radius: 999px;
-    font-size: 11px; font-weight: 600;
+    display: inline-block; padding: 2px 9px; border-radius: var(--radius-pill);
+    font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: .04em;
   }
-  .vpill.pass { background: rgba(63,185,80,.15); color: var(--green); }
-  .vpill.fail { background: rgba(248,81,73,.15); color: var(--red); }
+  .vpill.pass { background: var(--green-dim); color: var(--green); }
+  .vpill.fail { background: var(--red-dim); color: var(--red); }
+
+  /* Responsive: stack panels, let the page scroll */
+  @media (max-width: 900px) {
+    body { height: auto; overflow: auto; }
+    .main { flex-direction: column; overflow: visible; }
+    .sidebar { width: 100%; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border); }
+    .content { overflow: visible; }
+    .viewer { flex-direction: column; overflow: visible; }
+    .obs-panel { min-height: 320px; }
+    .info-panel { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+    .nav-meta { display: none; }
+  }
+  @media (max-width: 640px) {
+    .kbd-hints { display: none; }
+    .controls { flex-wrap: wrap; }
+  }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <h1>axiom console <span style="color:var(--text-muted);font-weight:400">/ demo</span></h1>
-    <nav class="console-nav">
-      <a class="active" href="demo.html">Demo</a>
-      <a href="robustness.html">Leaderboard</a>
-      <a href="https://github.com/ayushgundecha/axiom-ai">GitHub</a>
-    </nav>
-  </div>
-  <div class="meta" id="header-meta"></div>
-</div>
+<header class="site-nav">
+  <a class="brand" href="index.html"><span class="mark">a</span>axiom <span class="suffix">console</span></a>
+  <div class="nav-meta" id="header-meta"></div>
+  <nav>
+    <a href="index.html">Overview</a>
+    <a class="active" href="demo.html">Demo</a>
+    <a href="robustness.html">Leaderboard</a>
+    <a href="https://github.com/ayushgundecha/axiom-ai">GitHub ↗</a>
+  </nav>
+</header>
 
 <div class="main">
   <div class="sidebar" id="sidebar">
@@ -481,10 +458,10 @@
 
   // Environment display metadata + sidebar order.
   const ENV_META = {
-    axiomchat: { icon: '💬', name: 'AxiomChat' },
-    webapp:    { icon: '🌐', name: 'WebApp' },
-    cli:       { icon: '⌨',       name: 'CLI' },
-    json:      { icon: '{ }',          name: 'JSON' },
+    axiomchat: { icon: '◆', name: 'AxiomChat' },
+    webapp:    { icon: '▤', name: 'WebApp' },
+    cli:       { icon: '❯_', name: 'CLI' },
+    json:      { icon: '{ }', name: 'JSON' },
   };
   const ENV_ORDER = ['axiomchat', 'webapp', 'cli', 'json'];
 
