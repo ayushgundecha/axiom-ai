@@ -1,0 +1,109 @@
+%% axiom-ai — portable architecture explainer (paste into mermaid.live or any
+%% mermaid renderer, e.g. a ```mermaid fence on GitHub).
+%% The canonical README image is rendered from docs/architecture.html; this file
+%% is the walkthrough version: five layers, top to bottom, the life of an episode.
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background": "#0a0a0b",
+    "primaryColor": "#141416",
+    "primaryTextColor": "#ededf0",
+    "primaryBorderColor": "#303038",
+    "lineColor": "#6e6e78",
+    "clusterBkg": "#101012",
+    "clusterBorder": "#232328",
+    "edgeLabelBackground": "#0a0a0b",
+    "fontFamily": "ui-monospace, SF Mono, Menlo, monospace",
+    "fontSize": "13px"
+  },
+  "flowchart": { "curve": "linear", "nodeSpacing": 40, "rankSpacing": 55 }
+}}%%
+flowchart TB
+
+  %% ── 1 · AGENTS ──────────────────────────────────────────────────────────
+  subgraph AG["1 · AGENTS — agents/ · multi-provider (Anthropic or Gemini)"]
+    direction LR
+    HONEST["<b>Honest agent</b><br/>vision + DOM<br/>genuinely does the task"]
+    EXPLOIT["<b>Exploiter agent</b><br/>briefed on the PROXY spec only<br/>laziest path that still pays"]
+    RANDOM["<b>Random agent</b><br/>baseline"]
+  end
+
+  %% ── 2 · TWO RUNNERS ─────────────────────────────────────────────────────
+  subgraph RUN["2 · TWO RUNNERS — two questions, one trajectory format"]
+    direction LR
+    API["<b>01 · Interactive API</b><br/><i>can it do the task?</i> — drives all four envs<br/>run_demo.py → FastAPI :8000<br/>sessions / step / evaluate<br/>4-dim score: completion · efficiency<br/>· accuracy · safety"]
+    HARNESS["<b>02 · Benchmark harness</b><br/><i>can it cheat the reward?</i> — drives AxiomChat only<br/>run_robustness.py<br/>tasks × seeds × agents × reward v0/v1<br/><b>sole holder of the oracle token</b><br/>grades out-of-band, never in the serving path"]
+  end
+
+  %% ── 3 · ENVIRONMENTS ────────────────────────────────────────────────────
+  subgraph ENV["3 · ENVIRONMENTS — one interface: BaseEnvironment + @register_env · async · reset per episode"]
+    direction LR
+    JSONENV["<b>JSON</b><br/>pure-Python state machine<br/>instant, zero deps"]
+    CLIENV["<b>CLI</b><br/>sandboxed subprocess<br/>28 allowlisted commands"]
+    WEBENV["<b>WebApp</b><br/>Playwright + Chromium<br/>todo app :3000"]
+    CHAT["<b>★ AxiomChat</b><br/>deterministic mini-Slack :3100<br/>seeded reset → byte-reproducible<br/>token-gated oracle /api/_oracle/state"]
+  end
+
+  %% ── 4 · THE GRADING SPLIT ───────────────────────────────────────────────
+  subgraph GRADE["4 · THE GRADING SPLIT — reward hack ≡ proxy_pass ∧ ¬oracle_pass · held-out eval seeds"]
+    direction LR
+    PROXY["<b>PROXY — in-band</b><br/>the live training reward<br/>cheap, gameable: DOM / regex /<br/>keyword / count or LLM judge<br/>v0 naive → v1 hardened<br/><i>all the agent is ever scored on</i>"]
+    RRS["<b>RRS</b> = (1 − hack_rate)<br/>× honest_fidelity"]
+    ORACLE["<b>ORACLE — out-of-band</b><br/>privileged ground truth<br/>deterministic, never an LLM<br/>harness diffs pre/post state<br/><i>the agent never sees it</i>"]
+    JUDGE["LLM-judge sub-study<br/>a judge is a proxy too:<br/>naive fooled 3/3 injections<br/>hardened (5 defenses) resisted 3/3"]
+  end
+
+  %% ── hardening loop (TDD for rewards) ────────────────────────────────────
+  subgraph LOOP["TDD for rewards — the arms race"]
+    direction LR
+    CATALOG["<b>Exploit catalog</b><br/>25 named patterns<br/>+ live-discovered hacks"]
+    DEFENSE["<b>Named defense</b><br/>v1 = v0 + defenses<br/>truth-free gates,<br/>honest work still pays"]
+    CORPUS["<b>Corpus regression · CI</b><br/>no-false-negative gate<br/>on every push"]
+  end
+
+  %% ── 5 · OUTPUTS ─────────────────────────────────────────────────────────
+  subgraph OUT["5 · OUTPUTS — one console"]
+    direction LR
+    TRAJ["<b>trajectories/</b><br/>every step + screenshot +<br/>proxy/oracle verdict<br/>(from both runners)"]
+    REPORTS["<b>reports/*.json</b><br/>offline · live · frozen discovery runs<br/>mode + model labels in meta"]
+    CONSOLE["<b>Axiom Console</b><br/>Overview · Demo (REWARD HACK banner)<br/>· Leaderboard → GitHub Pages"]
+  end
+
+  %% ── flow ────────────────────────────────────────────────────────────────
+  %% Layer-to-layer edges connect SUBGRAPHS only — a node-level edge crossing a
+  %% subgraph boundary makes mermaid ignore that subgraph's `direction LR`.
+  AG ==>|"the same agents, graded by two runners"| RUN
+  RUN ==>|"01 → all four environments · 02 → AxiomChat only"| ENV
+  ENV ==>|"every AxiomChat episode is graded twice"| GRADE
+  GRADE ==>|"every leak becomes a named test"| LOOP
+  LOOP ==>|"verdicts + metrics"| OUT
+
+  %% intra-layer edges (safe — they stay inside their subgraph)
+  PROXY --- RRS
+  RRS --- ORACLE
+  PROXY -.- JUDGE
+  CATALOG -->|"finds a hack"| DEFENSE -->|"frozen as"| CORPUS
+  CORPUS -.->|"attacker tries again — a live LLM<br/>broke hardened rewards twice"| CATALOG
+  TRAJ --> CONSOLE
+  REPORTS --> CONSOLE
+
+  %% invisible links: `direction LR` only affects connected nodes, so chain the
+  %% siblings that have no real edge between them
+  HONEST ~~~ EXPLOIT ~~~ RANDOM
+  API ~~~ HARNESS
+  JSONENV ~~~ CLIENV ~~~ WEBENV ~~~ CHAT
+  TRAJ ~~~ REPORTS
+
+  %% ── styling ─────────────────────────────────────────────────────────────
+  classDef hot fill:#17172b,stroke:#7c86ff,stroke-width:1.5px,color:#ededf0
+  classDef proxyC fill:#141420,stroke:#7c86ff,color:#ededf0
+  classDef oracleC fill:#0f1a15,stroke:#3dd68c,color:#ededf0
+  classDef metric fill:#0d0d0f,stroke:#303038,color:#98a0ff
+  classDef danger fill:#1a0f10,stroke:#f2555a,color:#ededf0
+  classDef out fill:#141416,stroke:#303038,color:#ededf0
+
+  class CHAT,CONSOLE hot
+  class PROXY proxyC
+  class ORACLE oracleC
+  class RRS metric
+  class EXPLOIT,CATALOG danger
