@@ -29,9 +29,9 @@ jobs:
       - name: Assemble console (leaderboard + demo viewer + committed reports & transcripts)
         run: |
           mkdir -p site/reports
-          cp static/robustness.html site/index.html
-          cp static/robustness.html site/robustness.html
+          cp static/demo.html site/index.html
           cp static/demo.html site/demo.html
+          cp static/robustness.html site/robustness.html
           cp reports/*.json site/reports/
           cp -R reports/transcripts site/reports/transcripts
       - uses: actions/configure-pages@v5

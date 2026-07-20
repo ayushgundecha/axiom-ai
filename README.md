@@ -20,10 +20,10 @@
 </p>
 
 <p align="center">
-  <a href="https://ayushgundecha.github.io/axiom-ai/"><b>▶ Live leaderboard</b></a> ·
+  <a href="https://ayushgundecha.github.io/axiom-ai/"><b>▶ Live console</b></a> ·
+  <a href="https://ayushgundecha.github.io/axiom-ai/robustness.html">Leaderboard</a> ·
   <a href="docs/writeup.md">Case study</a> ·
-  <a href="apps/axiomchat/README.md">AxiomChat</a> ·
-  <a href="docs/architecture-diagram.mmd">Architecture</a>
+  <a href="apps/axiomchat/README.md">AxiomChat</a>
 </p>
 
 ---
@@ -66,7 +66,7 @@ The exploiter cheated **both** naive rewards outright (v0 hack `1.000`) and was 
 Live judge sub-study: naive judge fooled on `0.333` of injections, hardened judge resisted `1.000` (the free-tier naive judge sometimes refuses the injection on its own — the offline simulated study isolates the mechanism at `1.000` / `1.000`).
 
 <p align="center">
-  <a href="https://ayushgundecha.github.io/axiom-ai/"><img src="docs/images/leaderboard.png" alt="Reward Robustness Leaderboard — red v0 naive rewards, green v1 hardened rewards" width="760"/></a><br/>
+  <a href="https://ayushgundecha.github.io/axiom-ai/robustness.html"><img src="docs/images/leaderboard.png" alt="Reward Robustness Leaderboard — red v0 naive rewards, green v1 hardened rewards" width="760"/></a><br/>
   <i>The live leaderboard — click through to toggle Offline · Live · both discovery runs.</i>
 </p>
 

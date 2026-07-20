@@ -211,6 +211,10 @@
     border-radius: var(--radius);
     border: 1px solid var(--border);
   }
+  .obs-panel .obs-note {
+    margin: auto; color: var(--text-muted); font-size: 13px;
+    padding: 24px; text-align: center;
+  }
   .obs-panel pre {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -454,6 +458,7 @@
   let playTimer = null;
   let baseTrajectoryUrl = '';
   let staticBase = false;  // true when replaying committed reports/transcripts (no API)
+  let obsToken = 0;        // guards against out-of-order async screenshot loads
 
   // DOM refs
   const headerMeta = document.getElementById('header-meta');
@@ -688,15 +693,27 @@
 
   function renderObservation(step) {
     const obs = step.observation || {};
+    const visual = trajectory.env_type === 'webapp' || trajectory.env_type === 'axiomchat';
 
-    // Try screenshot first. API-served trajectories keep PNGs under
-    // screenshots/; committed transcripts store them flat next to trajectory.json.
-    const screenshotUrl = baseTrajectoryUrl
-      + (staticBase ? '/step_' : '/screenshots/step_') + step.step_num + '.png';
-    if (trajectory.env_type === 'webapp' || trajectory.env_type === 'axiomchat') {
+    if (visual) {
+      // API-served trajectories keep PNGs under screenshots/; committed
+      // transcripts store them flat next to trajectory.json.
+      const screenshotUrl = baseTrajectoryUrl
+        + (staticBase ? '/step_' : '/screenshots/step_') + step.step_num + '.png';
+      // Clear immediately so the previous step's image never lingers (no flash),
+      // and a missing screenshot shows a clean placeholder — never the raw DOM.
+      const token = ++obsToken;
+      obsPanel.innerHTML = '<div class="obs-note">loading step ' + step.step_num + '…</div>';
       const img = new Image();
-      img.onload = () => { obsPanel.innerHTML = ''; obsPanel.appendChild(img); };
-      img.onerror = () => { renderTextObservation(obs); };
+      img.onload = () => {
+        if (token !== obsToken) return;  // a newer step already rendered
+        obsPanel.innerHTML = '';
+        obsPanel.appendChild(img);
+      };
+      img.onerror = () => {
+        if (token !== obsToken) return;
+        obsPanel.innerHTML = '<div class="obs-note">&#128247; no screenshot captured for this step</div>';
+      };
       img.src = screenshotUrl;
       img.alt = 'Step ' + step.step_num + ' screenshot';
       return;
