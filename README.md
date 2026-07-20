@@ -47,6 +47,19 @@ The punchline: I hardened these rewards until a *scripted* adversary couldn't be
 
 ---
 
+## Two questions, one interface
+
+Every agent in axiom-ai is graded on two questions — the same two the [live console](https://ayushgundecha.github.io/axiom-ai/) opens with:
+
+| | Question | Where | Watch it |
+|---|---|---|---|
+| **01** | **Can the agent do the task?** | All four environments — interactive episodes scored on completion · efficiency · accuracy · safety | [Demo](https://ayushgundecha.github.io/axiom-ai/demo.html) |
+| **02** | **Can the agent cheat the reward?** | AxiomChat only — every episode graded twice: the gameable proxy the agent optimizes vs. an out-of-band oracle it can never see | [Leaderboard](https://ayushgundecha.github.io/axiom-ai/robustness.html) |
+
+AxiomChat is the only environment tested on both. Question 02 is where the novel work lives, so it's what the rest of this README goes deep on — question 01 is covered by [the four environments](#the-four-environments) and every run in the Demo.
+
+---
+
 ## Headline results
 
 Two evaluation modes, **labeled by mode everywhere** — hiding either would invite exactly the Goodhart critique this benchmark exists to make.
