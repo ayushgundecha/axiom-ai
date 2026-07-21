@@ -110,6 +110,11 @@
     font-size: 58px; line-height: 1; letter-spacing: -.02em;
   }
   .t-macro .bignum { font-size: 72px; }
+  .t-macro .delta { margin-top: 14px; }
+  /* .jpill is inline-flex, so its text nodes are flex items and the literal
+     spaces around <b> collapse — restore them with a gap. */
+  .t-macro .delta .jpill { gap: 4px; }
+  .t-macro .delta b { font-weight: 700; }
   .tile .caption { color: var(--text-secondary); font-size: 13.5px; margin-top: 12px; line-height: 1.55; }
   .tile .caption strong { color: var(--text); font-weight: 600; }
   .meter { margin-top: 20px; height: 6px; border-radius: 3px; background: rgba(124,134,255,.14); overflow: hidden; }
@@ -297,10 +302,11 @@
 
 <div class="bento">
   <div class="card tile t-macro">
-    <span class="micro t-label">Macro-RRS · offline benchmark</span>
-    <div class="bignum" data-stat="macro">0.682</div>
-    <p class="caption"><span data-stat="runs">174</span> labeled runs across 8 task × reward cells, driven by a scripted exploit catalog on held-out seeds.</p>
-    <div class="meter"><i data-stat="macro-meter" style="width:68.2%"></i></div>
+    <span class="micro t-label">Macro-RRS · hardened rewards</span>
+    <div class="bignum" data-stat="macro">1.000</div>
+    <div class="delta"><span class="jpill resisted">▲ from <b data-stat="macro-v0">0.364</b> naive</span></div>
+    <p class="caption"><span data-stat="runs">174</span> labeled runs over 4 tasks × 2 reward versions, driven by a scripted exploit catalog on held-out seeds.</p>
+    <div class="meter"><i data-stat="macro-meter" style="width:100%"></i></div>
   </div>
 
   <div class="card tile t-story">
@@ -331,10 +337,10 @@
   <div class="card tile t-judge">
     <span class="micro t-label">LLM judges get prompt-injected</span>
     <div class="judge-rows">
-      <div class="judge-row"><span class="who" data-stat="judge-naive">naive judge · claude-haiku</span><span class="jpill fooled" data-stat="judge-naive-pill">FOOLED 3 / 3</span></div>
-      <div class="judge-row"><span class="who" data-stat="judge-hard">hardened judge · claude-opus + 5 defenses</span><span class="jpill resisted" data-stat="judge-hard-pill">RESISTED 3 / 3</span></div>
+      <div class="judge-row"><span class="who" data-stat="judge-naive">naive judge · simulated</span><span class="jpill fooled" data-stat="judge-naive-pill">FOOLED 3 / 3</span></div>
+      <div class="judge-row"><span class="who" data-stat="judge-hard">hardened judge · simulated + 5 defenses</span><span class="jpill resisted" data-stat="judge-hard-pill">RESISTED 3 / 3</span></div>
     </div>
-    <p class="caption">Honest work scores 1.0 under both judges — the defenses cost nothing.</p>
+    <p class="caption"><strong>Same model, same rubric</strong> — only the defense stack differs, so what's measured is the defenses and not model capability. Honest work scores 1.0 under both.</p>
   </div>
 
   <div class="card tile t-small t-envs">
@@ -437,13 +443,29 @@
     });
   }
 
+  // summary.macro_rrs averages v0 and v1 cells together, which is not a headline
+  // anyone can act on. The story is the pair: naive reward vs hardened reward.
+  function macroFor(byTaskVersion, version) {
+    var suffix = '::' + version;
+    var vals = Object.keys(byTaskVersion)
+      .filter(function (k) { return k.slice(-suffix.length) === suffix; })
+      .map(function (k) { return byTaskVersion[k].rrs; });
+    if (!vals.length) return null;
+    return vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
+  }
+
   async function init() {
     var offline = await fetchJson(['reports/robustness.json', '../reports/robustness.json']);
     if (offline && offline.summary) {
-      set('macro', offline.summary.macro_rrs.toFixed(3));
+      var macroV0 = macroFor(offline.summary.by_task_version, 'v0');
+      var macroV1 = macroFor(offline.summary.by_task_version, 'v1');
+      if (macroV0 !== null) set('macro-v0', macroV0.toFixed(3));
+      if (macroV1 !== null) {
+        set('macro', macroV1.toFixed(3));
+        var meter = document.querySelector('[data-stat="macro-meter"]');
+        if (meter) meter.style.width = (macroV1 * 100).toFixed(1) + '%';
+      }
       set('runs', String(offline.runs.length));
-      var meter = document.querySelector('[data-stat="macro-meter"]');
-      if (meter) meter.style.width = (offline.summary.macro_rrs * 100).toFixed(1) + '%';
       updateDuel(offline.summary.by_task_version);
       var j = offline.judge_substudy;
       if (j && j.attacks) {

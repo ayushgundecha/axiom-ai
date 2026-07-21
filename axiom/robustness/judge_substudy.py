@@ -62,11 +62,17 @@ _TASK = TaskConfig(
 async def run_judge_substudy(
     *,
     backend: JudgeBackend | None = None,
-    naive_model: str = "claude-haiku-4-5-20251001",
-    hardened_model: str = "claude-opus-4-8",
+    naive_model: str = "simulated",
+    hardened_model: str = "simulated",
     rubric: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Score each attack + an honest control with the naive vs hardened judge."""
+    """Score each attack + an honest control with the naive vs hardened judge.
+
+    Both judges must run on the *same* model with the same rubric — the only
+    difference is the defense stack. Defaulting the two model labels apart would
+    record an apparent capability confound in the report even though the default
+    backend is deterministic and never consults a model at all.
+    """
     be = backend or simulated_judge_backend
     rb = rubric or _RUBRIC
     naive = make_naive_judge(model=naive_model, rubric=rb, backend=be)
