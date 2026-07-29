@@ -373,7 +373,7 @@
   <div class="content" id="content">
     <div class="empty-state" id="empty-state">
       <div class="icon">&#9654;</div>
-      <p>Pick an environment on the left, then a run — step through what the agent saw, did, and was scored. Reward-hacking runs are flagged.</p>
+      <p>Pick an environment on the left, then a run — step through what the agent saw, did, and was scored on completion, efficiency, accuracy, and safety. Reward-robustness runs also show a proxy-vs-oracle verdict; hacks are flagged.</p>
     </div>
 
     <div id="replay-view" style="display:none;flex:1;flex-direction:column;overflow:hidden">
@@ -929,7 +929,24 @@
         if (byEnv[env].some((it) => it.id === sessionId)) { selectEnv(env); break; }
       }
       await loadTrajectory(sessionId);
+    } else {
+      // No explicit run requested: open an honest task-competence run first
+      // (question 01), so a first-time visitor sees an agent *doing the task* —
+      // not an empty pane, and not a reward-hack. Prefer ENV_ORDER; skip hacks.
+      const def = pickDefaultRun();
+      if (def) { selectEnv(def.env); await loadTrajectory(def.id); }
     }
+  }
+
+  // First honest (non-hack) run in sidebar order — the Q1 default landing.
+  function pickDefaultRun() {
+    const order = ENV_ORDER.filter((e) => byEnv[e]).concat(
+      Object.keys(byEnv).filter((e) => !ENV_ORDER.includes(e)));
+    for (const env of order) {
+      const honest = (byEnv[env] || []).find((it) => it.hack !== true);
+      if (honest) return { env, id: honest.id };
+    }
+    return null;
   }
 
   init();
